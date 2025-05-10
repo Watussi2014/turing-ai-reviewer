@@ -3,13 +3,21 @@ import constants
 from langchain_core.prompts import PromptTemplate
 import streamlit as st
 import json
+import os
+from dotenv import load_dotenv
+import google.generativeai as genai
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+load_dotenv()
+api_key = os.getenv("GEMINI_API_KEY")
+genai.configure(api_key=api_key)
 
 class ModelService:
     def __init__(self):
         self.llm = self._init_model()
 
     def _init_model(self, model: str = constants.DEFAULT_MODEL) -> ChatOpenAI:
-        return ChatOpenAI(model=model, temperature=0)
+        return ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.0)
 
     def restructure_requirements(self, requirements):
         template = """
@@ -78,33 +86,18 @@ class ModelService:
         return file_summary
 
     def analyze_file_quality(self, file_path, file_summary, file_content):
-        prompt = f"""
+        prompt = """
         You are reviewing a file from a student project. You are given:
         - A short summary describing the purpose of the file
         - The full file content
         - The file's path (to infer its role based on its name)
 
-        Your task is to critically analyze the file based on what it is supposed to do and how well it does it.
-
-        Consider the following when reviewing:
-
-        ### If it's a documentation file (like README.md or requirements.txt):
-        - Does it include all the essential sections? (e.g., project description, usage, install instructions)
-        - Is it clearly written and informative?
-        - Is anything important missing?
-
-        ### If it's a utility/helper code file:
-        - Are the functions clearly named and scoped?
-        - Is the logic correct and well-documented?
-        - Could the implementation be improved? (e.g., made cleaner, more efficient, or more Pythonic?)
-        - Is the file doing too much or violating separation of concerns?
-
-        ### General (applies to all code files):
-        - Code cleanliness and structure
-        - Comments and docstrings
-        - Naming conventions
-        - Maintainability and extensibility
-        - Readability and formatting
+       Your goal is to:
+        1. Judge how well the file fulfills its intended role in the project
+        2. Highlight strengths and issues
+        3. Suggest specific improvements, especially in terms of clarity, correctness, maintainability, and usefulness
+        
+        Be context-aware: treat README, requirements.txt, or config files differently from code modules.
 
         ---
 
@@ -117,25 +110,26 @@ class ModelService:
 
         **File Content**:
         {file_content}
-
+        
         ---
 
-        Provide your analysis in the following JSON format:
-
+        Return your analysis in this exact JSON format:
+        
         {{
-          "overall_assessment": "Short summary of how well the file fulfills its purpose",
-          "strengths": ["List of specific things done well"],
-          "issues": ["List of concrete issues or missed expectations"],
-          "suggestions": ["List of ways to improve this file (e.g., structure, content, efficiency)"]
+          "file_purpose": "What is this file for? Based on filename + summary.",
+          "fulfills_purpose": true/false,
+          "strengths": ["Short bullet list of what's good"],
+          "issues": ["Short bullet list of what's missing, incorrect, or weak"],
+          "suggestions": ["Specific, actionable ways to improve the file"]
         }}
         """
 
-
         message = PromptTemplate(template=prompt,
-                                 input_variables=["file_summary", "file_code"])
+                                 input_variables=["file_path", "file_summary", "file_code"])
         chain = message | self.llm
-        file_feedback = chain.invoke({"file_summary": file_summary,
-                                     "file_code": file_code}).content
+        file_feedback = chain.invoke({"file_path": file_path,
+                                      "file_summary": file_summary,
+                                     "file_content": file_content}).content
         return file_feedback
 
 
@@ -192,37 +186,50 @@ class ModelService:
         file_paths = file_paths.strip().split()
         return file_paths
 
-    def generate_final_feedback(self, file_feedbacks, requirements, description):
-        prompt = f"""
-        You are a project reviewer. Your task is to analyze a student's project and provide final feedback.
+    def generate_final_feedback(self, file_feedbacks, requirements, project_description):
+        prompt = """
+        Your task is to produce a comprehensive project review for a student's software submission.
+        You are given:
+        - A short description of the overall project
+        - A list of project requirements
+        - Structured feedback for each file in the project
+        ---
+        **Project Description**:
+        {project_description}
 
-        You have the following information:
-        - A list of **file feedbacks** from different files
-        - A list of **requirements** the project must fulfill
-        - A **project description**
-
-        Your job is to provide a final review of the project, focusing on the overall quality, 
-        completeness, and adherence to the requirements.
-
-        Project Description:
-        {description}
-
-        Requirements:
+        **Project Requirements**:
         {requirements}
 
-        File Feedbacks:
+        **Feedback on Each File**:
         {file_feedbacks}
 
-        Provide a structured feedback report.
+        ---
+
+        Based on this, write a structured project review in Markdown format.
+
+        Your output should include:
+        1. **Overall Summary**: Brief overview of project quality, clarity, and correctness.
+        2. **Requirement Fulfillment**: For each requirement, explain if and how it's fulfilled, and which files contribute to it.
+        3. **File Quality Highlights**: Mention files that are especially strong or weak and why.
+        4. **General Strengths**: E.g., clear structure, readable code, useful documentation.
+        5. **Areas for Improvement**: E.g., missing functionality, unclear code, poor comments, inefficiencies.
+        6. **Suggested Next Steps**: Actionable advice for improving the project.
+
+        Use bullet points and subheadings to keep the review scannable.
         """
 
         message = PromptTemplate(template=prompt,
-                                 input_variables=["file_feedbacks", "requirements", "description"])
+                                 input_variables=["file_feedbacks", "requirements", "project_description"])
 
         chain = message | self.llm
         final_feedback = chain.invoke({"file_feedbacks": file_feedbacks,
                                        "requirements": requirements,
-                                       "description": description}).content
+                                       "project_description": project_description}).content
+        full_prompt = message.format(
+            file_feedbacks=file_feedbacks,
+            requirements=requirements,
+            project_description=project_description
+        )
         return final_feedback
 
     def choose_files_to_analyze(self, file_summary, requirement):

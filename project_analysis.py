@@ -18,6 +18,7 @@ def get_all_project_files(folder_path, project_description):
         for name in files:
             ext = os.path.splitext(name)[1].lower()
             if ext not in VALID_EXTENSIONS:
+                st.write(f"Skipped {name} due to unsupported file extension.")
                 continue
             file_path = os.path.join(root, name)
             try:
@@ -52,7 +53,7 @@ def analyze_project(uploaded_zip, requirements, description):
     st.write("File Data:")
     file_summary = [{"summary": file["summary"], "path": file["path"]} for file in file_data]
     st.write("Summary of files")
-    st.write(file_summary)
+    st.write(file_data)
     model_service = ModelService()
 
     structured_requirements = model_service.restructure_requirements(requirements).content
@@ -73,13 +74,10 @@ def analyze_project(uploaded_zip, requirements, description):
     for path in file_paths:
         summary = [f["summary"] for f in file_data if f["path"] == path]
         content = [code["code"] for code in file_data if code["path"] == path]
-        print(summary)
-        print(content)
         file_feedback = model_service.analyze_file_quality(path, summary, content)
         file_feedbacks[path] = file_feedback
+    st.write("File Feedbacks:")
 
-
-    for file_path, summary in file_summaries.items():
-        model_service.analyze_code(file_path, summary)
-
-    model_service.check_requirements(requirements, code_files)
+    final_feedback = model_service.generate_final_feedback(file_feedbacks, structured_requirements, description)
+    st.write("Final Feedback:")
+    st.write(final_feedback)
