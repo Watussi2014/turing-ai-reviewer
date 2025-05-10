@@ -3,6 +3,20 @@ resource "aws_s3_bucket" "project_files" {
   force_destroy = true
 }
 
+resource "aws_s3_bucket_cors_configuration" "student_project_files_cors" {
+  bucket = aws_s3_bucket.project_files.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["GET", "PUT", "POST", "HEAD"]
+    allowed_origins = [
+      "http://turing-hackathon-frontend.s3-website.eu-west-3.amazonaws.com"
+    ]
+    expose_headers = ["ETag"]
+    max_age_seconds = 3000
+  }
+}
+
 resource "aws_s3_bucket" "frontend" {
   bucket        = "turing-hackathon-frontend" 
   force_destroy = true 
