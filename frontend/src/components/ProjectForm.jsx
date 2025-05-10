@@ -53,7 +53,7 @@ const ProjectForm = () => {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to create project in DynamoDB",
+        description: error.message,
         variant: "destructive",
       });
     } finally {

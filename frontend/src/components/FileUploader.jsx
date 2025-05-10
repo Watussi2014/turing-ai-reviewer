@@ -32,27 +32,37 @@ const FileUploader = ({ onFileSend }) => {
     if (!isDragging) setIsDragging(true);
   };
 
-  const handleDrop = (e) => {
+  const handleDrop = async (e) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
     
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFiles(e.dataTransfer.files);
+      await handleFiles(Array.from(e.dataTransfer.files));
     }
   };
 
-  const handleFileInputChange = (e) => {
+  const handleFileInputChange = async (e) => {
     if (e.target.files && e.target.files.length > 0) {
-      handleFiles(e.target.files);
+      await handleFiles(Array.from(e.target.files));
     }
   };
 
-  const handleFiles = (fileList) => {
-    const newFiles = Array.from(fileList);
+  const handleFiles = async (newFiles) => {
+    // Validate file size (example: 10MB limit)
+    const invalidFiles = newFiles.filter(file => file.size > 10 * 1024 * 1024);
+    if (invalidFiles.length > 0) {
+      toast({
+        title: "File Too Large",
+        description: "Some files exceed the 10MB limit",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setFiles((prevFiles) => {
       const updatedFiles = [...prevFiles, ...newFiles];
-      onFileSend(updatedFiles);
+      onFileSend(updatedFiles); // Send the actual File objects
       return updatedFiles;
     });
   };
@@ -60,7 +70,7 @@ const FileUploader = ({ onFileSend }) => {
   const removeFile = (index) => {
     setFiles((prevFiles) => {
       const updatedFiles = prevFiles.filter((_, i) => i !== index);
-      onFileSend(updatedFiles);
+      onFileSend(updatedFiles); // Update parent component with remaining files
       return updatedFiles;
     });
   };
@@ -68,7 +78,11 @@ const FileUploader = ({ onFileSend }) => {
   return (
     <div className="w-full">
       <div
-        className={`file-drop-area ${isDragging ? "drag-active" : ""}`}
+        className={`relative border-2 border-dashed rounded-lg p-6 transition-colors duration-200 ease-in-out ${
+          isDragging 
+            ? "border-primary bg-primary/5" 
+            : "border-primary/20 hover:border-primary/50"
+        }`}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
@@ -89,7 +103,7 @@ const FileUploader = ({ onFileSend }) => {
             transition={{ duration: 0.3 }}
             className="flex justify-center mb-4"
           >
-            <Upload size={48} className="upload-icon" />
+            <Upload size={48} className="text-primary/50" />
           </motion.div>
           <h3 className="text-lg font-semibold mb-2">
             Drag & Drop Files Here

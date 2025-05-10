@@ -45,19 +45,25 @@ const ProjectUpload = () => {
     setIsSubmitting(true);
 
     try {
+      // Convert FileList to actual File objects array if needed
+      const fileArray = Array.from(files).map(file => {
+        // Ensure each file is actually a File object
+        if (file instanceof File) {
+          return file;
+        }
+        // If it's not a File object, try to create one
+        return new File([file], file.name, { type: file.type });
+      });
+
       await saveProjectUpload({
         ...formData,
-        files: files.map(file => ({
-          name: file.name,
-          size: file.size,
-          type: file.type
-        })),
+        files: fileArray,
         created_at: new Date().toISOString()
       });
       
       toast({
         title: "Success!",
-        description: "Your project and files have been uploaded to DynamoDB",
+        description: "Your project and files have been uploaded successfully",
       });
       
       // Reset form
@@ -68,9 +74,10 @@ const ProjectUpload = () => {
       });
       setFiles([]);
     } catch (error) {
+      console.error("Upload error:", error);
       toast({
         title: "Error",
-        description: "Failed to upload project to DynamoDB",
+        description: "Failed to upload project. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -87,6 +94,7 @@ const ProjectUpload = () => {
   };
 
   const handleFileSend = (uploadedFiles) => {
+    // Ensure we're getting actual File objects
     setFiles(uploadedFiles);
   };
 
