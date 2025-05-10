@@ -173,3 +173,12 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 ai_reviewer_venv/
+
+#Terraform stuff
+.terraform/
+.terraform.lock.*
+*.tfstate
+*.tfstate.backup
+
+.DS_Store
+node_modules/
