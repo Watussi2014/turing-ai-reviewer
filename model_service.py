@@ -8,16 +8,16 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-load_dotenv()
-api_key = os.getenv("GEMINI_API_KEY")
-genai.configure(api_key=api_key)
-
 class ModelService:
     def __init__(self):
         self.llm = self._init_model()
 
     def _init_model(self, model: str = constants.DEFAULT_MODEL) -> ChatOpenAI:
-        return ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.0)
+        # load_dotenv()
+        # api_key = os.getenv("GEMINI_API_KEY")
+        # genai.configure(api_key=api_key)
+        # return ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.0, google_api_key=api_key)
+        return ChatOpenAI(model=model, temperature=0.0)
 
     def restructure_requirements(self, requirements):
         template = """
