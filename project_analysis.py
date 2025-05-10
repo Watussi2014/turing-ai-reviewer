@@ -102,9 +102,12 @@ def analyze_project(uploaded_zip, requirements, description):
         summary = [f["summary"] for f in file_data if f["path"] == path]
         content = [code["code"] for code in file_data if code["path"] == path]
         file_feedback = model_service.analyze_file_quality(path, summary, content)
+        st.write(f"Feedback for {path}:")
+        st.write(file_feedback)
         file_feedbacks[path] = file_feedback
     st.write("File Feedbacks:")
 
     final_feedback = model_service.generate_final_feedback(file_feedbacks, structured_requirements, description)
     st.write("Final Feedback:")
     st.write(final_feedback)
+    return final_feedback, file_data

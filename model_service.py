@@ -3,6 +3,7 @@ import constants
 from langchain_core.prompts import PromptTemplate
 import streamlit as st
 import json
+from langchain.schema import SystemMessage, HumanMessage
 import os
 from dotenv import load_dotenv
 import google.generativeai as genai
@@ -13,10 +14,6 @@ class ModelService:
         self.llm = self._init_model()
 
     def _init_model(self, model: str = constants.DEFAULT_MODEL) -> ChatOpenAI:
-        # load_dotenv()
-        # api_key = os.getenv("GEMINI_API_KEY")
-        # genai.configure(api_key=api_key)
-        # return ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.0, google_api_key=api_key)
         return ChatOpenAI(model=model, temperature=0.0)
 
     def restructure_requirements(self, requirements):
@@ -95,7 +92,6 @@ class ModelService:
        Your goal is to:
         1. Judge how well the file fulfills its intended role in the project
         2. Highlight strengths and issues
-        3. Suggest specific improvements, especially in terms of clarity, correctness, maintainability, and usefulness
         
         Be context-aware: treat README, requirements.txt, or config files differently from code modules.
 
@@ -111,21 +107,21 @@ class ModelService:
         **File Content**:
         {file_content}
         
-        ---
-
-        Return your analysis in this exact JSON format:
         
-        {{
-          "file_purpose": "What is this file for? Based on filename + summary.",
-          "fulfills_purpose": true/false,
-          "strengths": ["Short bullet list of what's good"],
-          "issues": ["Short bullet list of what's missing, incorrect, or weak"],
-          "suggestions": ["Specific, actionable ways to improve the file"]
-        }}
+        Your output should include:
+        1. **File purpose**: "What is this file for? Based on filename + summary."
+        2. **Fulfills the purpose**: true/false
+        3. **General Strengths**: 
+            - List the file’s notable strengths.
+            - For each, include an explanation and specify where (which file or part of the project) it is implemented.
+        5. **Areas for Improvement**: 
+            - Focus first on the most critical issues, followed by less significant ones.
+            - For each issue, explain why it matters and point to the specific implementation location (e.g. 
+            function or code snippet).
         """
 
         message = PromptTemplate(template=prompt,
-                                 input_variables=["file_path", "file_summary", "file_code"])
+                                 input_variables=["file_path", "file_summary", "file_content"])
         chain = message | self.llm
         file_feedback = chain.invoke({"file_path": file_path,
                                       "file_summary": file_summary,
@@ -188,7 +184,7 @@ class ModelService:
 
     def generate_final_feedback(self, file_feedbacks, requirements, project_description):
         prompt = """
-        Your task is to produce a comprehensive project review for a student's software submission.
+        Your task is to produce a comprehensive project review for a student's project submission.
         You are given:
         - A short description of the overall project
         - A list of project requirements
@@ -209,10 +205,15 @@ class ModelService:
 
         Your output should include:
         1. **Overall Summary**: Brief overview of project quality, clarity, and correctness.
-        2. **Requirement Fulfillment**: For each requirement, explain if and how it's fulfilled, and which files contribute to it.
-        3. **File Quality Highlights**: Mention files that are especially strong or weak and why.
-        4. **General Strengths**: E.g., clear structure, readable code, useful documentation.
-        5. **Areas for Improvement**: E.g., missing functionality, unclear code, poor comments, inefficiencies.
+        2. **Requirement Fulfillment**: For each requirement, explain if and how it's fulfilled, 
+        and which files contribute to it.
+        3. **General Strengths**: 
+            - List the project’s notable strengths.
+            - For each, include an explanation and specify where (which file or part of the project) it is implemented.
+        5. **Areas for Improvement**: 
+            - Focus first on the most critical issues, followed by less significant ones.
+            - For each issue, explain why it matters and point to the specific implementation location (e.g., filename, 
+            function or code snippet).
         6. **Suggested Next Steps**: Actionable advice for improving the project.
 
         Use bullet points and subheadings to keep the review scannable.
@@ -254,12 +255,54 @@ class ModelService:
         selected_files = chain.invoke({"file_summary": file_summary, "requirements": requirement})
         return selected_files
 
-#
-# Return only a space-separated list of file paths, in the order they should be analyzed.
-#             Do not include any extra text or formatting.
-# Example:
-# '
-# project / main.py
-# project / utils.py
-# project / tests / test_main.py
-# '
+    def get_relevant_files(self, file_data, query):
+        """
+        Uses LangChain to query the LLM for the best matching filenames based on a description.
+        """
+        file_summary = [{"summary": file["summary"], "path": file["path"]} for file in file_data]
+
+        template = """You are a computer that precisely matches file paths and descriptions to a query.
+        You will receive a dictionary containing file paths and their descriptions. 
+        Based on the query that you receive, output 1-2 most fitting filenames. 
+        Your output must be strictly the paths separated by a space.
+    
+        ---FILE DICTIONARY---
+        {file_summary}
+        ---Query---
+        {query}"""
+
+        prompt = PromptTemplate(
+            input_variables=["file_summary", "query"],
+            template=template
+        )
+        chain = prompt | self.llm
+        selected_files = chain.invoke({"file_summary": file_summary, "query": query}).content
+        st.write("Selected files:")
+        st.write(selected_files)
+        return selected_files.split(" ")
+
+    def generate_response(self, relevant_files, previous_conversation):
+        # Join file contents for context
+        relevant_file_data = "\n\n".join(
+            f"{path}:\n{content}"
+            for file in relevant_files
+            for path, content in file.items()
+        )
+
+        # Compose a system message that provides context only
+        system_message = SystemMessage(content=f"""
+            You are a lead project reviewer. You provided a comprehensive review of the learner's project. After that,
+            the user asks you follow-up questions about the project. To answer the user's question, you may be 
+            provided with some of the project files' contents. Use them to answer the user's question.
+            If the question is not related to the project, say "I can't help with that."
+            You can also refer to the previous conversation for context.
+        
+            Here are the relevant project files:
+            {relevant_file_data}
+            """)
+        messages = [system_message] + previous_conversation
+        st.write(messages)
+        response = self.llm(messages)
+
+        return response.content
+
