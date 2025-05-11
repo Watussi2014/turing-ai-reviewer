@@ -1,0 +1,59 @@
+import streamlit as st
+from project_analysis import analyze_project
+from langchain_core.messages import HumanMessage, AIMessage
+from processing_chat import process_follow_up_message
+st.set_page_config(page_title="AI Project Reviewer", layout="wide")
+
+st.title("🤖 AI Project Reviewer")
+st.markdown("Upload your project files and enter your requirements to get an AI-based review. Ask follow-up questions anytime!")
+st.sidebar.header("Upload Project Files")
+uploaded_zip = st.sidebar.file_uploader("Upload your project folder (.zip)", type="zip")
+description = st.text_area("📌 Project Description", placeholder="")
+requirements = st.text_area("📌 Project Requirements", placeholder="Describe the expected behavior, features, or goals...")
+
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+
+if "initial_feedback" not in st.session_state:
+    st.session_state.initial_feedback = None
+
+if "project_uploaded" not in st.session_state:
+    st.session_state.project_uploaded = False
+
+if st.button("🧠 Review Project"):
+    if uploaded_zip and requirements and description:
+        st.session_state.chat_history = []
+        st.session_state.requirements = requirements
+        st.session_state.description = description
+        st.success("Project review in progress...")
+        feedback, file_data = analyze_project(uploaded_zip, requirements, description)
+        st.session_state.initial_feedback = feedback
+        st.session_state.file_data = file_data
+        st.session_state.project_uploaded = True
+
+        ai_message = AIMessage(content=feedback)
+        st.session_state.chat_history.append(ai_message)
+    else:
+        st.warning("Please upload a project zip file and enter your requirements.")
+
+for msg in st.session_state.chat_history:
+    if isinstance(msg, HumanMessage):
+        with st.chat_message("user"):
+            st.write(msg.content)
+    elif isinstance(msg, AIMessage):
+        with st.chat_message("assistant"):
+            st.write(msg.content)
+
+if st.session_state.project_uploaded and st.session_state.initial_feedback:
+    if user_input := st.chat_input("💬 Ask a follow-up question..."):
+        human_reply = HumanMessage(content=user_input)
+        st.session_state.chat_history.append(human_reply)
+        with st.spinner("Thinking..."):
+            response = process_follow_up_message(
+                st.session_state.chat_history,
+                user_input,
+                st.session_state.file_data
+            )
+        ai_reply = AIMessage(content=response)
+        st.session_state.chat_history.append(ai_reply)
+        st.rerun()
