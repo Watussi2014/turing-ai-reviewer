@@ -215,6 +215,12 @@ class ModelService:
             - For each issue, explain why it matters and point to the specific implementation location (e.g., filename, 
             function or code snippet).
         6. **Suggested Next Steps**: Actionable advice for improving the project.
+        7. **Estimated Likelihood of Passing**: Based on the overall quality, requirement fulfillment, 
+        and file feedback, estimate the project's likelihood of passing a review by a Senior Developer. 
+        Assume that a score of 70/100 is the passing threshold. Provide a brief justification for the estimate,
+         highlighting strengths and weaknesses that influence the evaluation. Clearly state the estimated likelihood as
+          an approximate chance of passing (not a numeric score), and briefly justify the estimate by summarizing key 
+          strengths and weaknesses.
 
         Use bullet points and subheadings to keep the review scannable. Use markdown table for requirement fulfillment.
         """
