@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { BrainCircuit, ChevronRight, Send, Loader2, AlertCircle, CheckCircle2, Github } from 'lucide-react';
-import { Button } from '../components/ui/button';
-import { Toaster } from '../components/ui/toaster';
-import { useToast } from '../components/ui/use-toast';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Toaster } from '@/components/ui/toaster';
+import { useToast } from '@/components/ui/use-toast';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { motion } from 'framer-motion';
-import MarkdownMessage from '../components/ui/mdMessages';
+import MarkdownMessage from '@/components/ui/mdMessages';
 
 const AiReviewPage = () => {
   const [repoUrl, setRepoUrl] = useState('');
