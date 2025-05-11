@@ -1,0 +1,4 @@
+langchain_core==0.3.59
+langchain==0.3.25
+nbformat==5.10.4
+
