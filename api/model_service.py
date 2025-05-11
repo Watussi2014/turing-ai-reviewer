@@ -5,9 +5,8 @@ import streamlit as st
 import json
 from langchain.schema import SystemMessage, HumanMessage
 import os
-from dotenv import load_dotenv
-import google.generativeai as genai
-from langchain_google_genai import ChatGoogleGenerativeAI
+
+
 
 class ModelService:
     def __init__(self):
