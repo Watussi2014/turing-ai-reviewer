@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-
+import MarkdownMessage from './components/ui/mdMessages';
 function App() {
   const [repoUrl, setRepoUrl] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -64,7 +64,7 @@ function App() {
         setMessages([
           {
             sender: 'bot',
-            text: `I've analyzed the project at ${repoUrl}. What would you like to know about it?`
+            text: data.response
           }
         ]);
         
@@ -210,7 +210,7 @@ function App() {
                     key={index} 
                     className={`chat-bubble ${message.sender === 'user' ? 'user-bubble' : 'bot-bubble'}`}
                   >
-                    {message.text}
+                    <MarkdownMessage content={message.text} />
                   </div>
                 ))}
                 

@@ -30,5 +30,5 @@ class AskLLM:
         response = process_follow_up_message(self.chat_history, user_input, self.file_data)
         ai_reply = AIMessage(content=response)
         self.chat_history.append(ai_reply)
-        return ai_reply
+        return ai_reply.content
 

@@ -216,7 +216,7 @@ class ModelService:
             function or code snippet).
         6. **Suggested Next Steps**: Actionable advice for improving the project.
 
-        Use bullet points and subheadings to keep the review scannable.
+        Use bullet points and subheadings to keep the review scannable. Use markdown table for requirement fulfillment.
         """
 
         message = PromptTemplate(template=prompt,
