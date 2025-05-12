@@ -183,5 +183,6 @@ ai_reviewer_venv/
 .DS_Store
 node_modules/
 frontend/node_modules/
-
+reviewer_venv/
+.idea/
 .vite/
