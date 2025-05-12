@@ -15,6 +15,25 @@ class ModelService:
     def _init_model(self, model: str = constants.DEFAULT_MODEL) -> ChatOpenAI:
         return ChatOpenAI(model=model, temperature=0.0)
 
+    def extract_project_description(self, text_before_requirements):
+        template = """
+        You are a helpful assistant that analyzes task descriptions and extracts the project description from them.
+        The task description may contain details about the student, the course, or additional context. 
+        Your primary responsibility is to extract ONLY the project description. 
+        This description should be a concise paragraph that focuses on explaining the idea of the project.
+        Focus on summarizing the project idea clearly and briefly.
+
+        The task description is as follows:
+        {task_description}
+        """
+        prompt_tepmlate = PromptTemplate(
+            input_variables=["text_before_requirements"],
+            template=template,
+        )
+        chain = prompt_tepmlate | self.llm
+        project_description = chain.invoke({"task_description": text_before_requirements}).content
+        return project_description
+
     def restructure_requirements(self, requirements):
         template = """
             You are a helpful assistant that analyzes project requirements and breaks them into 
