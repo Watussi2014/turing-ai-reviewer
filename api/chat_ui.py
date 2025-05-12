@@ -2,6 +2,11 @@ import streamlit as st
 from project_analysis import analyze_project
 from langchain_core.messages import HumanMessage, AIMessage
 from processing_chat import process_follow_up_message
+import json
+import requests
+from flask import Flask, request, jsonify
+from ask_llm import AskLLM
+
 st.set_page_config(page_title="AI Project Reviewer", layout="wide")
 
 st.title("🤖 AI Project Reviewer")
@@ -10,7 +15,8 @@ st.sidebar.header("Upload Project Files")
 uploaded_zip = st.sidebar.file_uploader("Upload your project folder (.zip)", type="zip")
 description = st.text_area("📌 Project Description", placeholder="")
 requirements = st.text_area("📌 Project Requirements", placeholder="Describe the expected behavior, features, or goals...")
-
+github_link = st.text_area("📌 GitHub link to the project", placeholder="")
+url = ' http://localhost:8080/api/analyze'
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
@@ -21,7 +27,13 @@ if "project_uploaded" not in st.session_state:
     st.session_state.project_uploaded = False
 
 if st.button("🧠 Review Project"):
-    if uploaded_zip and requirements and description:
+    if github_link:
+        data = {
+            'repoUrl': github_link
+        }
+        st.write(data)
+        response = requests.post(url, json=data)
+        st.write(response)
         st.session_state.chat_history = []
         st.session_state.requirements = requirements
         st.session_state.description = description
