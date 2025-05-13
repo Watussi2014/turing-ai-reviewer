@@ -1,9 +1,13 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
 from ask_llm import AskLLM
+import dotenv
 
-app = Flask(__name__)
+
+dotenv.load_dotenv()
+
+app = Flask(__name__, static_folder='static')
 # Simple CORS configuration allowing all origins
 CORS(app, supports_credentials=True, origins="*")
 
@@ -49,8 +53,19 @@ def health_check():
     """Health check endpoint."""
     return jsonify({'status': 'healthy'}), 200
 
-if __name__ == '__main__':
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve(path):
+    if path and os.path.exists(app.static_folder + '/' + path):
+        return send_from_directory(app.static_folder, path)
+    else:
+        return send_from_directory(app.static_folder, 'index.html')
+
+def main():
     port = int(os.environ.get('PORT', 3000))
     print("Starting flask server...")
     app.run(host='0.0.0.0', port=port, debug=True)
     print(f"Server running at http://localhost:{port}")
+
+if __name__ == '__main__':
+    main()
