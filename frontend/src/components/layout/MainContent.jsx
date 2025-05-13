@@ -2,10 +2,17 @@ import React, { useState } from 'react';
 import Header from '@/components/layout/Header';
 import AiReviewCard from '@/components/common/AiReviewCard';
 import { Button } from '@/components/ui/button';
+import Modal from '@/components/ui/Modal';
+import AiReviewPage from '@/pages/AiReviewPage';
 
 const MainContent = () => {
   const [showInput, setShowInput] = useState(false);
   const [repoUrl, setRepoUrl] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleStartAiReview = () => {
+    setIsModalOpen(true);
+  };
 
   const handleRepoClick = () => {
     setShowInput(prev => !prev);
@@ -58,7 +65,7 @@ const MainContent = () => {
         </div>
 
         <div className="mt-10">
-          <AiReviewCard />
+          <AiReviewCard onStartReview={handleStartAiReview} />
         </div>
 
         <div className="mt-12 text-gray-300">
@@ -72,6 +79,12 @@ const MainContent = () => {
             </ul>
           </div>
       </div>
+      
+      {isModalOpen && (
+        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+          <AiReviewPage />
+        </Modal>
+      )}
     </main>
   );
 };
