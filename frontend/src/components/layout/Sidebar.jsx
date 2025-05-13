@@ -5,9 +5,10 @@
     import NavItem from '@/components/common/NavItem';
 
     const Sidebar = () => (
-      <aside className="w-80 bg-[#2C2F3A] text-gray-300 p-6 flex flex-col justify-between min-h-screen">
+      <aside className="w-80 bg-[#202127] text-gray-300 p-6 flex flex-col justify-between min-h-screen">
         <div>
-          <div className="flex items-center mb-10">
+          <div className="flex items-center space-x-3 mb-10">
+          <img src="/logo.png" alt="Logo" className="w-8 h-8" />
             <h1 className="text-2xl font-bold text-white">Turing College</h1>
           </div>
           <nav>

@@ -1,12 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+// Remove the Link import since it's causing issues
 import { BrainCircuit, ChevronRight, Send, Loader2, AlertCircle, CheckCircle2, Github } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { motion } from 'framer-motion';
 import MarkdownMessage from '@/components/ui/mdMessages';
 
 const AiReviewPage = () => {
@@ -17,7 +16,21 @@ const AiReviewPage = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
+  const hasAutoRun = useRef(false); // <- to prevent repeated analysis
   const { toast } = useToast();
+  const [showChatOverlay, setShowChatOverlay] = useState(false);
+
+
+  useEffect(() => {
+    const savedRepoUrl = localStorage.getItem('repoUrl');
+    if (savedRepoUrl && validateGithubUrl(savedRepoUrl) && !hasAutoRun.current) {
+      setRepoUrl(savedRepoUrl);
+      hasAutoRun.current = true;
+      setTimeout(() => {
+        handleAnalyzeRepo(savedRepoUrl);
+      }, 300); // slight delay for UX
+    }
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -32,8 +45,10 @@ const AiReviewPage = () => {
     return githubRegex.test(url);
   };
 
-  const handleAnalyzeRepo = () => {
-    if (!validateGithubUrl(repoUrl)) {
+  const handleAnalyzeRepo = (customUrl) => {
+    const urlToUse = customUrl || repoUrl;
+  
+    if (!validateGithubUrl(urlToUse)) {
       toast({
         title: "Invalid GitHub URL",
         description: "Please enter a valid GitHub repository URL (e.g., https://github.com/username/repo)",
@@ -42,34 +57,25 @@ const AiReviewPage = () => {
       return;
     }
   
+    setRepoUrl(urlToUse);
     setIsAnalyzing(true);
-    
-    // Call backend API to analyze the repository
+  
     fetch('http://localhost:3000/api/analyze', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ repoUrl }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ repoUrl: urlToUse }),
     })
       .then(response => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
+        if (!response.ok) throw new Error('Network response was not ok');
         return response.json();
       })
       .then(data => {
         setIsAnalyzing(false);
         setIsAnalyzed(true);
-        
-        // Add welcome message from the bot
-        setMessages([
-          {
-            sender: 'bot',
-            text: data.response
-          }
-        ]);
-        
+        setMessages([{ sender: 'bot', text: data.response }]);
+        setShowChatOverlay(true);
+
+  
         toast({
           title: "Repository Analyzed",
           description: "The project has been successfully analyzed. You can now ask questions about it.",
@@ -134,171 +140,114 @@ const AiReviewPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex flex-col p-8 text-white">
-      {/* Initial Input Section - Shown only before analysis is complete */}
-      {!isAnalyzed && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-2xl mx-auto mb-8"
-        >
-          <div className="text-center mb-6">
-            <BrainCircuit size={48} className="mx-auto mb-4 text-indigo-400" />
-            <h1 className="text-4xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-400">
-              GitHub Repo Analyzer
-            </h1>
-            <p className="text-lg text-gray-400 mb-6">
-              Enter a GitHub repository URL to analyze its code and ask questions about it
-            </p>
-          </div>
-
-          <div className="bg-slate-800 p-6 rounded-xl shadow-lg border border-slate-700">
-            <Label htmlFor="repoUrl" className="text-sm text-gray-300 mb-2 block">GitHub Repository URL</Label>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Input
-                id="repoUrl"
-                type="text"
-                value={repoUrl}
-                onChange={(e) => setRepoUrl(e.target.value)}
-                placeholder="https://github.com/username/repo"
-                className="bg-slate-900 border-slate-700 text-white placeholder:text-gray-500 flex-grow"
-                disabled={isAnalyzing}
-              />
-              <Button 
-                onClick={handleAnalyzeRepo} 
-                disabled={isAnalyzing || !repoUrl}
-                className="bg-indigo-600 hover:bg-indigo-700 sm:w-auto w-full"
-              >
-                {isAnalyzing ? (
-                  <><Loader2 size={16} className="mr-2 animate-spin" /> Analyzing</>
-                ) : (
-                  <><Github size={16} className="mr-2" /> Analyze</>
-                )}
-              </Button>
-            </div>
-
-            {isAnalyzing && (
-              <div className="mt-6 space-y-2">
-                <motion.div
-                  className="w-full h-2 bg-slate-700 rounded-full overflow-hidden"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
+    <>
+      <div className="min-h-screen bg-[#0f0f11] text-white font-sans">
+        {!isAnalyzed ? (
+          // PRE-ANALYSIS LAYOUT
+          <div className="max-w-4xl mx-auto px-6 py-24">
+            <h1 className="text-4xl font-bold mb-8 text-white">GitHub Repository URL</h1>
+            <div className="bg-[#1a1b1e] p-6 rounded-xl border border-[#2b2c2f] shadow-md">
+              <Label htmlFor="repoUrl" className="block text-gray-300 mb-2">
+                GitHub Repository URL
+              </Label>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Input
+                  id="repoUrl"
+                  type="text"
+                  value={repoUrl}
+                  onChange={(e) => setRepoUrl(e.target.value)}
+                  placeholder="https://github.com/username/repo"
+                  className="bg-[#121316] border border-[#2c2d30] text-white placeholder:text-gray-500 flex-grow"
+                  disabled={isAnalyzing}
+                />
+                <Button
+                  onClick={handleAnalyzeRepo}
+                  disabled={isAnalyzing || !repoUrl}
+                  className="bg-[#7c3aed] hover:bg-[#6d28d9] transition-all text-white"
                 >
-                  <motion.div
-                    className="h-full bg-gradient-to-r from-purple-500 to-indigo-500"
-                    initial={{ width: "0%" }}
-                    animate={{ width: "100%" }}
-                    transition={{ duration: 5, ease: "linear", repeat: Infinity }}
-                  />
-                </motion.div>
-                <p className="text-xs text-gray-500 text-center">Processing repository data...</p>
+                  {isAnalyzing ? (
+                    <>
+                      <Loader2 size={16} className="mr-2 animate-spin" /> Analyzing
+                    </>
+                  ) : (
+                    <>Analyze</>
+                  )}
+                </Button>
               </div>
-            )}
+  
+              {isAnalyzing && (
+                <div className="mt-6">
+                  <div className="w-full h-2 bg-[#2a2a2d] rounded-full overflow-hidden">
+                    <div className="h-full w-full animate-pulse bg-gradient-to-r from-purple-500 via-indigo-500 to-purple-500" />
+                  </div>
+                  <p className="text-sm text-gray-400 mt-2">Processing repository data...</p>
+                </div>
+              )}
+            </div>
           </div>
-        </motion.div>
-      )}
-
-      {/* Chat Interface - Expanded to full width after analysis */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6, delay: isAnalyzed ? 0.3 : 0 }}
-        className={`bg-slate-800 rounded-xl shadow-2xl border border-slate-700 flex flex-col w-full ${
-          isAnalyzed ? 'max-w-6xl mx-auto' : 'max-w-6xl mx-auto'
-        }`}
-        style={{ 
-          height: isAnalyzed ? 'calc(100vh - 120px)' : 'auto',
-          minHeight: !isAnalyzed ? '500px' : 'auto'
-        }}
-      >
-        {/* Chat Messages Area */}
-        <div className="flex-1 p-5 overflow-y-auto">
-          {messages.length === 0 && !isAnalyzed && (
-            <div className="h-full flex flex-col items-center justify-center text-center text-gray-500">
-              <BrainCircuit size={40} className="mb-4 text-slate-700" />
-              <h3 className="text-lg font-medium text-slate-500">Repository Analysis</h3>
-              <p className="text-sm mt-1 max-w-md text-slate-600">
-                Enter a GitHub repository URL and click "Analyze" to start exploring the codebase
-              </p>
-            </div>
-          )}
-          
-          {messages.map((msg, index) => (
-            <div 
-              key={index} 
-              className={`mb-4 flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div 
-                className={`max-w-3/4 rounded-lg p-3 ${
-                  msg.sender === 'user' 
-                    ? 'bg-indigo-600 text-white' 
-                    : 'bg-slate-700 text-gray-100'
-                }`}
-              >
-                <MarkdownMessage content={msg.text} />
+        ) : (
+          // POST-ANALYSIS CHAT UI
+          <div className="w-full bg-[#202127] px-4 sm:px-8 py-6">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-6 px-4 sm:px-6">
+              <div className="flex items-center gap-3">
+                <img src="/logo.png" alt="Logo" className="w-8 h-8" />
+                <h2 className="text-2xl font-semibold text-white">
+                  Chat with the AI reviewer about the project
+                </h2>
               </div>
             </div>
-          ))}
-          
-          {isTyping && (
-            <div className="flex justify-start mb-4">
-              <div className="bg-slate-700 text-white rounded-lg p-3">
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-75"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-150"></div>
+  
+            {/* Fullscreen Chat Card */}
+            <div className="bg-[#1a1b1e] rounded-xl border border-[#2c2d30] shadow-md px-6 py-8 min-h-[calc(100vh-140px)] flex flex-col justify-between">
+              <div className="overflow-y-auto space-y-4 mb-4 max-h-[70vh] pr-2">
+                {messages.map((msg, index) => (
+                  <div
+                    key={index}
+                    className={`mb-2 ${msg.sender === 'user' ? 'text-right' : 'text-left'}`}
+                  >
+                    <div
+                      className={`inline-block max-w-3xl whitespace-pre-wrap px-4 py-3 rounded-lg text-sm ${
+                        msg.sender === 'user'
+                          ? 'bg-[#7c3aed] text-white'
+                          : 'bg-[#2c2d30] text-gray-200'
+                      }`}
+                    >
+                      <MarkdownMessage content={msg.text} />
+                    </div>
+                  </div>
+                ))}
+                {isTyping && <div className="text-sm text-gray-400">AI is typing...</div>}
+              </div>
+  
+              {/* Chat input */}
+              <div className="pt-4 border-t border-[#2c2d30]">
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                    placeholder="Ask me about the repository..."
+                    className="bg-[#121316] border border-[#2c2d30] text-white placeholder:text-gray-500 flex-grow"
+                    disabled={isTyping}
+                  />
+                  <Button
+                    onClick={handleSendMessage}
+                    disabled={!inputMessage.trim() || isTyping}
+                    className="bg-[#7c3aed] hover:bg-[#6d28d9]"
+                  >
+                    {isTyping ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                  </Button>
                 </div>
               </div>
             </div>
-          )}
-          
-          <div ref={messagesEndRef} />
-        </div>
-        
-        {/* Chat Input Area - Only shown after analysis */}
-        {isAnalyzed && (
-          <div className="p-4 border-t border-slate-700">
-            <div className="flex gap-2">
-              <Input
-                type="text"
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Ask me about the repository..."
-                className="bg-slate-700 border-slate-600 text-white placeholder:text-gray-400"
-                disabled={isTyping}
-              />
-              <Button 
-                onClick={handleSendMessage} 
-                disabled={!inputMessage.trim() || isTyping}
-                className="bg-indigo-600 hover:bg-indigo-700"
-              >
-                {isTyping ? (
-                  <Loader2 size={18} className="animate-spin" />
-                ) : (
-                  <Send size={18} />
-                )}
-              </Button>
-            </div>
           </div>
         )}
-
-        {/* Back button only shown when analysis is complete */}
-        {isAnalyzed && (
-          <div className="p-4 border-t border-slate-700">
-            <Link to="/" className="inline-block">
-              <Button variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
-                <ChevronRight size={16} className="mr-2 rotate-180" /> Back to Dashboard
-              </Button>
-            </Link>
-          </div>
-        )}
-      </motion.div>
-      <Toaster />
-    </div>
+        <Toaster />
+      </div>
+    </>
   );
-};
-
+  
+};  
 export default AiReviewPage;
