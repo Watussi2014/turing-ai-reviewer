@@ -1,13 +1,15 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Send, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+// Remove the Link import since it's causing issues
+import { BrainCircuit, ChevronRight, Send, Loader2, AlertCircle, CheckCircle2, Github } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import MarkdownMessage from './components/ui/mdMessages';
-function App() {
+import { motion } from 'framer-motion';
+import MarkdownMessage from '@/components/ui/mdMessages';
+
+const AiReviewPage = () => {
   const [repoUrl, setRepoUrl] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isAnalyzed, setIsAnalyzed] = useState(false);
@@ -43,7 +45,7 @@ function App() {
     setIsAnalyzing(true);
     
     // Call backend API to analyze the repository
-    fetch('http://localhost:3000/api/analyze', {
+    fetch('turing-ai-reviewer-production.up.railway.app:8080/api/analyze', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -96,7 +98,7 @@ function App() {
     setIsTyping(true);
     
     // Call backend API to get a response
-    fetch('http://localhost:3000/api/chat', {
+    fetch('turing-ai-reviewer-production.up.railway.app:8080/api/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -132,124 +134,115 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen grid-pattern gradient-bg flex flex-col">
-      <header className="container mx-auto py-6">
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex items-center gap-2"
-        >
-          <img 
-            src="https://storage.googleapis.com/hostinger-horizons-assets-prod/218bdcfb-0707-4c21-9787-5b4c093a43d8/520c1ec8e62253f69c6475c3fd4cc23a.png"
-            alt="Turing College Logo"
-            className="h-8 w-8"
-          />
-          <h1 className="text-2xl font-bold">Turing AI Reviewer</h1>
-        </motion.div>
-      </header>
-
-      <main className="container mx-auto flex-1 flex flex-col gap-6 px-4 pb-6">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="glass-panel rounded-xl p-6 shadow-lg"
-        >
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="repo-url">GitHub Repository URL</Label>
+    <div className="min-h-screen bg-[#0f0f11] text-white font-sans">
+      {!isAnalyzed ? (
+        // PRE-ANALYSIS LAYOUT
+        <div className="max-w-4xl mx-auto px-6 py-24">
+          <h1 className="text-4xl font-bold mb-8 text-white">GitHub Repository URL</h1>
+          <div className="bg-[#1a1b1e] p-6 rounded-xl border border-[#2b2c2f] shadow-md">
+            <Label htmlFor="repoUrl" className="block text-gray-300 mb-2">GitHub Repository URL</Label>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Input
+                id="repoUrl"
+                type="text"
+                value={repoUrl}
+                onChange={(e) => setRepoUrl(e.target.value)}
+                placeholder="https://github.com/username/repo"
+                className="bg-[#121316] border border-[#2c2d30] text-white placeholder:text-gray-500 flex-grow"
+                disabled={isAnalyzing}
+              />
+              <Button 
+                onClick={handleAnalyzeRepo} 
+                disabled={isAnalyzing || !repoUrl}
+                className="bg-[#7c3aed] hover:bg-[#6d28d9] transition-all text-white"
+              >
+                {isAnalyzing ? (
+                  <><Loader2 size={16} className="mr-2 animate-spin" /> Analyzing</>
+                ) : (
+                  <>Analyze</>
+                )}
+              </Button>
+            </div>
+  
+            {isAnalyzing && (
+              <div className="mt-6">
+                <div className="w-full h-2 bg-[#2a2a2d] rounded-full overflow-hidden">
+                  <div className="h-full w-full animate-pulse bg-gradient-to-r from-purple-500 via-indigo-500 to-purple-500" />
+                </div>
+                <p className="text-sm text-gray-400 mt-2">Processing repository data...</p>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        // POST-ANALYSIS CHAT UI
+        <div className="w-full px-4 sm:px-8 py-6">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-6 px-4 sm:px-6">
+            <div className="flex items-center gap-3">
+              <img src="/logo.png" alt="Logo" className="w-8 h-8" />
+              <h2 className="text-2xl font-semibold text-white">Chat with AI about this repository</h2>
+            </div>
+            <Button
+              onClick={() => window.location.href = '/'}
+              variant="outline"
+              className="border border-[#2c2d30] text-gray-300 hover:bg-[#2a2a2e]"
+            >
+              Back
+            </Button>
+          </div>
+  
+          {/* Fullscreen Chat Card */}
+          <div className="bg-[#1a1b1e] rounded-xl border border-[#2c2d30] shadow-md px-6 py-8 min-h-[calc(100vh-140px)] flex flex-col justify-between">
+            <div className="overflow-y-auto space-y-4 mb-4 max-h-[70vh] pr-2">
+              {messages.map((msg, index) => (
+                <div 
+                  key={index} 
+                  className={`mb-2 ${msg.sender === 'user' ? 'text-right' : 'text-left'}`}
+                >
+                  <div 
+                    className={`inline-block max-w-3xl whitespace-pre-wrap px-4 py-3 rounded-lg text-sm ${
+                      msg.sender === 'user' 
+                        ? 'bg-[#7c3aed] text-white' 
+                        : 'bg-[#2c2d30] text-gray-200'
+                    }`}
+                  >
+                    <MarkdownMessage content={msg.text} />
+                  </div>
+                </div>
+              ))}
+              {isTyping && (
+                <div className="text-sm text-gray-400">AI is typing...</div>
+              )}
+            </div>
+  
+            {/* Chat input */}
+            <div className="pt-4 border-t border-[#2c2d30]">
               <div className="flex gap-2">
                 <Input
-                  id="repo-url"
-                  placeholder="https://github.com/username/repository"
-                  value={repoUrl}
-                  onChange={(e) => setRepoUrl(e.target.value)}
-                  className="flex-1"
-                  disabled={isAnalyzing || isAnalyzed}
+                  type="text"
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  placeholder="Ask me about the repository..."
+                  className="bg-[#121316] border border-[#2c2d30] text-white placeholder:text-gray-500 flex-grow"
+                  disabled={isTyping}
                 />
                 <Button 
-                  onClick={handleAnalyzeRepo} 
-                  disabled={isAnalyzing || isAnalyzed || !repoUrl}
-                  className="glow"
+                  onClick={handleSendMessage} 
+                  disabled={!inputMessage.trim() || isTyping}
+                  className="bg-[#7c3aed] hover:bg-[#6d28d9]"
                 >
-                  {isAnalyzing ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Analyzing
-                    </>
-                  ) : isAnalyzed ? (
-                    <>
-                      <CheckCircle2 className="mr-2 h-4 w-4" />
-                      Analyzed
-                    </>
-                  ) : (
-                    "Analyze Repository"
-                  )}
+                  {isTyping ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                 </Button>
               </div>
             </div>
           </div>
-        </motion.div>
-
-        {isAnalyzed && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            className="glass-panel rounded-xl flex-1 flex flex-col shadow-lg overflow-hidden"
-          >
-            <div className="p-4 border-b border-border">
-              <h2 className="text-lg font-semibold">Chat with AI about this repository</h2>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              <div className="flex flex-col gap-4">
-                {messages.map((message, index) => (
-                  <div 
-                    key={index} 
-                    className={`chat-bubble ${message.sender === 'user' ? 'user-bubble' : 'bot-bubble'}`}
-                  >
-                    <MarkdownMessage content={message.text} />
-                  </div>
-                ))}
-                
-                {isTyping && (
-                  <div className="chat-bubble bot-bubble">
-                    <div className="typing-indicator">
-                      <div className="typing-dot"></div>
-                      <div className="typing-dot"></div>
-                      <div className="typing-dot"></div>
-                    </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-            </div>
-            
-            <div className="p-4 border-t border-border">
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Ask about the project..."
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  className="flex-1"
-                />
-                <Button onClick={handleSendMessage} className="glow">
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </main>
-
-      <footer className="container mx-auto py-4 text-center text-sm text-muted-foreground">
-        <p>Turing AI Project Reviewer &copy; {new Date().getFullYear()}</p>
-      </footer>
+        </div>
+      )}
+      <Toaster />
     </div>
   );
-}
-
-export default App;
+  
+}  
+export default AiReviewPage;
