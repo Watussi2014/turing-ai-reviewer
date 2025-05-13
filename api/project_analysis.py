@@ -1,4 +1,3 @@
-from extract_zip import extract_zip_to_temp
 from model_service import ModelService
 import json
 import streamlit as st
@@ -38,6 +37,8 @@ def get_all_project_files(folder_path, project_description):
         if not is_valid_file(root):
             st.write(f"Skipped {root} due to macOS metadata or unsupported format.")
             continue
+        st.write("All files:")
+        st.write(files)
         for name in files:
             st.write(os.path.join(root, name))
             ext = os.path.splitext(name)[1].lower()
@@ -63,7 +64,7 @@ def get_all_project_files(folder_path, project_description):
                 continue
     return file_data
 
-def analyze_project(uploaded_zip, requirements, description):
+def analyze_project(project_folder, requirements, description):
     """
     Analyzes the project by extracting files from the zip and checking requirements.
 
@@ -75,9 +76,8 @@ def analyze_project(uploaded_zip, requirements, description):
     Returns:
         None
     """
-    temp_dir = extract_zip_to_temp(uploaded_zip)
-    st.write(temp_dir)
-    file_data = get_all_project_files(temp_dir, description)
+    st.write(project_folder)
+    file_data = get_all_project_files(project_folder, description)
     file_summary = [{"summary": file["summary"], "path": file["path"]} for file in file_data]
     st.write("Summary of files")
     st.write(file_summary)

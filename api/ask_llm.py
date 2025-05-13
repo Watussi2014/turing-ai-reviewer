@@ -9,21 +9,21 @@ class AskLLM:
         self.chat_history = []
         self.project_description = None
         self.project_requirements = None
-        self.zip_file = None
+        self.project_directory = None
         self.file_data = None
 
     def extract_files(self):
         print("Extracting files from zip...")
-        file_data = clean_zip_file(self.project_repo)
-        self.project_requirements = file_data["requirements"]
-        self.project_description = file_data["description"]
-        self.zip_file = file_data["zip"]
+        project_data = clean_zip_file(self.project_repo)
+        self.project_requirements = project_data["requirements"]
+        self.project_description = project_data["description"]
+        self.project_directory = project_data["project_directory"]
         print("Files extracted.")
 
     def analyze_project(self):
         print("Asking LLM to analyze project...")
         try:
-            feedback, self.file_data = analyze_project(self.zip_file, self.project_requirements, self.project_description)
+            feedback, self.file_data = analyze_project(self.project_directory, self.project_requirements, self.project_description)
             ai_message = AIMessage(content=feedback)
             self.chat_history.append(ai_message)
         except Exception as e:

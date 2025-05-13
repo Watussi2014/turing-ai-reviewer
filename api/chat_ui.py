@@ -1,4 +1,6 @@
 import streamlit as st
+
+from download_util import clean_zip_file
 from project_analysis import analyze_project
 from langchain_core.messages import HumanMessage, AIMessage
 from processing_chat import process_follow_up_message
@@ -16,7 +18,7 @@ uploaded_zip = st.sidebar.file_uploader("Upload your project folder (.zip)", typ
 description = st.text_area("📌 Project Description", placeholder="")
 requirements = st.text_area("📌 Project Requirements", placeholder="Describe the expected behavior, features, or goals...")
 github_link = st.text_area("📌 GitHub link to the project", placeholder="")
-url = ' http://localhost:8080/api/analyze'
+
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
@@ -28,19 +30,23 @@ if "project_uploaded" not in st.session_state:
 
 if st.button("🧠 Review Project"):
     if github_link:
-        data = {
-            'repoUrl': github_link
-        }
-        st.write(data)
-        response = requests.post(url, json=data)
-        st.write(response)
+        project_data = clean_zip_file(github_link)
+        requirements = project_data["requirements"]
+        description = project_data["description"]
+        project_directory = project_data["project_directory"]
+        st.write("Zip file:")
+        st.write(project_directory)
+        st.write("Project Description: ")
+        st.write(description)
+        st.write("Project Requirements: ")
+        st.write(requirements)
         st.session_state.chat_history = []
         st.session_state.requirements = requirements
         st.session_state.description = description
         st.success("Project review in progress...")
-        feedback, file_data = analyze_project(uploaded_zip, requirements, description)
+        feedback, project_data = analyze_project(project_directory, requirements, description)
         st.session_state.initial_feedback = feedback
-        st.session_state.file_data = file_data
+        st.session_state.project_data = project_data
         st.session_state.project_uploaded = True
 
         ai_message = AIMessage(content=feedback)
@@ -64,7 +70,7 @@ if st.session_state.project_uploaded and st.session_state.initial_feedback:
             response = process_follow_up_message(
                 st.session_state.chat_history,
                 user_input,
-                st.session_state.file_data
+                st.session_state.project_data
             )
         ai_reply = AIMessage(content=response)
         st.session_state.chat_history.append(ai_reply)
