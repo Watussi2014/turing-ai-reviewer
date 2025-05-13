@@ -17,7 +17,19 @@ const AiReviewPage = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
+  const hasAutoRun = useRef(false); // <- to prevent repeated analysis
   const { toast } = useToast();
+
+  useEffect(() => {
+    const savedRepoUrl = localStorage.getItem('repoUrl');
+    if (savedRepoUrl && validateGithubUrl(savedRepoUrl) && !hasAutoRun.current) {
+      setRepoUrl(savedRepoUrl);
+      hasAutoRun.current = true;
+      setTimeout(() => {
+        handleAnalyzeRepo(savedRepoUrl);
+      }, 300); // slight delay for UX
+    }
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -32,8 +44,10 @@ const AiReviewPage = () => {
     return githubRegex.test(url);
   };
 
-  const handleAnalyzeRepo = () => {
-    if (!validateGithubUrl(repoUrl)) {
+  const handleAnalyzeRepo = (customUrl) => {
+    const urlToUse = customUrl || repoUrl;
+  
+    if (!validateGithubUrl(urlToUse)) {
       toast({
         title: "Invalid GitHub URL",
         description: "Please enter a valid GitHub repository URL (e.g., https://github.com/username/repo)",
@@ -42,34 +56,23 @@ const AiReviewPage = () => {
       return;
     }
   
+    setRepoUrl(urlToUse);
     setIsAnalyzing(true);
-    
-    // Call backend API to analyze the repository
+  
     fetch('http://localhost:3000/api/analyze', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ repoUrl }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ repoUrl: urlToUse }),
     })
       .then(response => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
+        if (!response.ok) throw new Error('Network response was not ok');
         return response.json();
       })
       .then(data => {
         setIsAnalyzing(false);
         setIsAnalyzed(true);
-        
-        // Add welcome message from the bot
-        setMessages([
-          {
-            sender: 'bot',
-            text: data.response
-          }
-        ]);
-        
+        setMessages([{ sender: 'bot', text: data.response }]);
+  
         toast({
           title: "Repository Analyzed",
           description: "The project has been successfully analyzed. You can now ask questions about it.",
@@ -243,6 +246,6 @@ const AiReviewPage = () => {
       <Toaster />
     </div>
   );
-  
-}  
+}
+
 export default AiReviewPage;
