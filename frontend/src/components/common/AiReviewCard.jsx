@@ -2,6 +2,7 @@ import React from 'react';
 import { BrainCircuit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
+import TutorialArrow from '@/components/common/TutorialArrow';
 
 const AiReviewCard = ({ onStartReview }) => {
   return ( // Add the return statement here
@@ -21,6 +22,7 @@ const AiReviewCard = ({ onStartReview }) => {
           <BrainCircuit size={28} className="text-indigo-400" />
         </motion.div>
         <h2 className="text-2xl font-semibold text-white">AI-Powered Review</h2>
+        
       </div>
       <p className="text-gray-400 mb-6">
         Get instant feedback on your project. Our AI will analyze your work and provide valuable insights.
@@ -29,6 +31,7 @@ const AiReviewCard = ({ onStartReview }) => {
         <Button onClick={onStartReview} className="bg-blue-600 hover:bg-blue-700">
           Start AI Review
         </Button>
+       
         <Button variant="outline" size="lg" className="w-full sm:w-auto border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
           Peer Review
         </Button>
@@ -39,6 +42,7 @@ const AiReviewCard = ({ onStartReview }) => {
       <p className="text-sm text-gray-500 mt-4">
         Pass a total of 2 reviews, with at least 1 led by an STL.
       </p>
+      
     </motion.div>
   );
 };

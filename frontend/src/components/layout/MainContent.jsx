@@ -1,21 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '@/components/layout/Header';
 import AiReviewCard from '@/components/common/AiReviewCard';
 import { Button } from '@/components/ui/button';
 import Modal from '@/components/ui/Modal';
 import AiReviewPage from '@/pages/AiReviewPage';
+import TutorialArrow from '@/components/common/TutorialArrow';
 
 const MainContent = () => {
   const [showInput, setShowInput] = useState(false);
   const [repoUrl, setRepoUrl] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(true);
+
+  // Check if this is first visit
+  useEffect(() => {
+    const tutorialShown = localStorage.getItem('tutorialShown');
+    if (tutorialShown) {
+      setShowTutorial(true);
+    }
+  }, []);
+
+  // Hide tutorial after some time
+  useEffect(() => {
+    if (showTutorial) {
+      const timer = setTimeout(() => {
+        setShowTutorial(true);
+        //localStorage.setItem('tutorialShown', 'true');
+      }, 60000); // Hide tutorial after 15 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [showTutorial]);
 
   const handleStartAiReview = () => {
     setIsModalOpen(true);
+    if (showTutorial) {
+      setShowTutorial(false);
+      localStorage.setItem('tutorialShown', 'true');
+    }
   };
 
   const handleRepoClick = () => {
     setShowInput(prev => !prev);
+    if (showTutorial) {
+      setShowTutorial(false);
+      localStorage.setItem('tutorialShown', 'true');
+    }
   };
 
   const handleInputChange = (e) => {
@@ -24,18 +54,29 @@ const MainContent = () => {
 
   const saveToLocalStorage = () => {
     localStorage.setItem('repoUrl', repoUrl);
+    toast({
+      title: "Repository URL Saved",
+      description: "Your GitHub repository URL has been saved successfully.",
+      variant: "default",
+    });
+  };
+
+  // Function to reset tutorial
+  const resetTutorial = () => {
+    localStorage.removeItem('tutorialShown');
+    setShowTutorial(true);
   };
 
   return (
     <main className="flex-1 p-8 overflow-y-auto">
       <Header />
       <div className="mt-8">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between relative">
           <div>
             <p className="text-sm text-gray-400">Sprint: Statistical Inference</p>
             <h1 className="text-3xl font-bold text-white mt-1">Project - Analyzing A/B Tests</h1>
           </div>
-          <div className="flex flex-col items-end">
+          <div className="flex flex-col items-end relative">
             <Button 
               variant="outline" 
               className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
@@ -46,6 +87,15 @@ const MainContent = () => {
               </svg>
               Repository
             </Button>
+            
+            {/* Repository button tutorial arrow */}
+            {showTutorial && (
+              <TutorialArrow 
+                direction="right" 
+                text="1.Set your GitHub repo URL here" 
+                className="right-full mr-4"
+              />
+            )}
 
             {showInput && (
               <div className="mt-2 flex gap-2">
@@ -64,8 +114,17 @@ const MainContent = () => {
           </div>
         </div>
 
-        <div className="mt-10">
+        <div className="mt-10 relative">
           <AiReviewCard onStartReview={handleStartAiReview} />
+           {/* AI Review button tutorial arrow */}
+                  { (
+                      <TutorialArrow 
+                        direction="up" 
+                        text="2.Click here to start the AI review" 
+                        className="bottom-5 left-10 mb-4"
+                      />
+                    )}
+          
         </div>
 
         <div className="mt-12 text-gray-300">
@@ -77,7 +136,17 @@ const MainContent = () => {
               <li>Practice formulating and testing hypotheses.</li>
               <li>Practice interpreting p-values and confidence intervals.</li>
             </ul>
-          </div>
+        </div>
+        
+        {/* Small link to reset tutorial */}
+        <div className="mt-6">
+          <button 
+            onClick={resetTutorial} 
+            className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+          >
+            Show tutorial arrows again
+          </button>
+        </div>
       </div>
       
       {isModalOpen && (
