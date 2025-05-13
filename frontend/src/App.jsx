@@ -45,7 +45,7 @@ const AiReviewPage = () => {
     setIsAnalyzing(true);
     
     // Call backend API to analyze the repository
-    fetch('turing-ai-reviewer-production.up.railway.app:8080/api/analyze', {
+    fetch('http://localhost:3000/api/analyze', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -98,7 +98,7 @@ const AiReviewPage = () => {
     setIsTyping(true);
     
     // Call backend API to get a response
-    fetch('turing-ai-reviewer-production.up.railway.app:8080/api/chat', {
+    fetch('http://localhost:3000/api/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

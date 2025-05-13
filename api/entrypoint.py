@@ -1,25 +1,11 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
-from dotenv import load_dotenv
-from download_util import clean_zip_file
 from ask_llm import AskLLM
-
-# Load environment variables
-load_dotenv()
 
 app = Flask(__name__)
 # Simple CORS configuration allowing all origins
 CORS(app, supports_credentials=True, origins="*")
-
-# Get GitHub token from environment variables
-GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
-headers = {'Authorization': f'token {GITHUB_TOKEN}'} if GITHUB_TOKEN else {}
-
-# Store repo data in memory (for simplicity)
-repo_cache = {}
-
-llm_cache = None
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze_repo():
@@ -30,7 +16,6 @@ def analyze_repo():
     print(repo_url)
     ask_llm = AskLLM(repo_url)
     ask_llm.extract_files()
-    
     
     if not repo_url:
         return jsonify({'error': 'Repository URL and message are required'}), 400
@@ -65,6 +50,7 @@ def health_check():
     return jsonify({'status': 'healthy'}), 200
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 8080))
-    print(f"Server running at http://localhost:{port}")
+    port = int(os.environ.get('PORT', 3000))
+    print("Starting flask server...")
     app.run(host='0.0.0.0', port=port, debug=True)
+    print(f"Server running at http://localhost:{port}")
