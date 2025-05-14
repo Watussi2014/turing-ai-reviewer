@@ -2,7 +2,6 @@ import React from 'react';
 import { BrainCircuit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import TutorialArrow from '@/components/common/TutorialArrow';
 
 const AiReviewCard = ({ onStartReview }) => {
   return ( // Add the return statement here

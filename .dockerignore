@@ -1,0 +1,14 @@
+.git
+node_modules
+frontend/node_modules
+frontend/build
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env
+.vite/
+.dist/
+.node_modules/
+.conda/
