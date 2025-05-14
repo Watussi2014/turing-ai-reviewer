@@ -8,3 +8,7 @@ __pycache__
 *.pyd
 .Python
 .env
+.vite/
+.dist/
+.node_modules/
+.conda/

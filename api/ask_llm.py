@@ -13,15 +13,24 @@ class AskLLM:
         self.file_data = None
 
     def extract_files(self):
+        print("Extracting files from zip...")
         file_data = clean_zip_file(self.project_repo)
         self.project_requirements = file_data["requirements"]
         self.project_description = file_data["description"]
         self.zip_file = file_data["zip"]
+        print("Files extracted.")
 
     def analyze_project(self):
-        feedback, self.file_data = analyze_project(self.zip_file, self.project_requirements, self.project_description)
-        ai_message = AIMessage(content=feedback)
-        self.chat_history.append(ai_message)
+        print("Asking LLM to analyze project...")
+        try:
+            feedback, self.file_data = analyze_project(self.zip_file, self.project_requirements, self.project_description)
+            ai_message = AIMessage(content=feedback)
+            self.chat_history.append(ai_message)
+        except Exception as e:
+            print(f"Error analyzing project: {str(e)}")
+            ai_message = AIMessage(content=f"Error analyzing project: {str(e)}")
+            self.chat_history.append(ai_message)
+        print("Project analyzed. Returning feedback...")
         return ai_message.content
 
     def ask_followup(self, user_input):

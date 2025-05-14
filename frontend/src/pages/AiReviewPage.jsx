@@ -18,7 +18,6 @@ const AiReviewPage = () => {
   const messagesEndRef = useRef(null);
   const hasAutoRun = useRef(false); // <- to prevent repeated analysis
   const { toast } = useToast();
-  const [showChatOverlay, setShowChatOverlay] = useState(false);
 
 
   useEffect(() => {
@@ -60,7 +59,7 @@ const AiReviewPage = () => {
     setRepoUrl(urlToUse);
     setIsAnalyzing(true);
   
-    fetch('http://localhost:3000/api/analyze', {
+    fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ repoUrl: urlToUse }),
@@ -73,7 +72,6 @@ const AiReviewPage = () => {
         setIsAnalyzing(false);
         setIsAnalyzed(true);
         setMessages([{ sender: 'bot', text: data.response }]);
-        setShowChatOverlay(true);
 
   
         toast({
@@ -104,7 +102,7 @@ const AiReviewPage = () => {
     setIsTyping(true);
     
     // Call backend API to get a response
-    fetch('http://localhost:3000/api/chat', {
+    fetch('/api/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
