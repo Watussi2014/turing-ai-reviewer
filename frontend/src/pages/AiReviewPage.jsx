@@ -71,7 +71,12 @@ const AiReviewPage = () => {
       .then(data => {
         setIsAnalyzing(false);
         setIsAnalyzed(true);
-        setMessages([{ sender: 'bot', text: data.response }]);
+
+        // Show the session ID and initial LLM message
+      setMessages([
+                  { sender: 'bot', text: `Session ID: ${data.sessionId}` },
+                  { sender: 'bot', text: data.response }
+                ]);
 
   
         toast({
