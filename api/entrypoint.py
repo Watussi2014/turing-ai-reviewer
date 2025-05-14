@@ -1,12 +1,18 @@
-from flask import Flask, request, jsonify, send_from_directory, session
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
 from uuid import uuid4
 from datetime import datetime, timedelta
 from ask_llm import AskLLM
 import dotenv
+import logging
 
 dotenv.load_dotenv()
+
+logging.basicConfig(
+    level=logging.INFO,  # Or DEBUG for more verbosity
+    format="%(asctime)s [%(levelname)s] %(message)s",)
+log = logging.getLogger(__name__)
 
 app = Flask(__name__, static_folder="static")
 # Simple CORS configuration allowing all origins
@@ -28,13 +34,17 @@ def analyze_repo():
         return jsonify({"error": "Repository URL and message are required"}), 400
 
     try:
-        print("Launching repo analyzis : ", repo_url)
+        log.info(
+            "Launching analysis of repo:\n  Repo URL: %s\n  Session ID: %s",
+            repo_url,
+            session_id,
+        )
         message = ask_llm.analyze_project()
         llm_sessions[session_id] = {"llm": ask_llm, "last_accessed": datetime.now()}
         return jsonify({"response": message, "sessionId": session_id}), 200
 
     except Exception as e:
-        print("Exception in /api/analyze:", str(e))
+        log.error("Exception in /api/analyze: %s", str(e))
         return jsonify({"error": str(e)}), 500
 
 
@@ -55,11 +65,10 @@ def chat():
 
     try:
         reply = ask_llm.ask_followup(user_message)
-        print(f"Reply type: {type(reply)}")
         return jsonify({"response": reply}), 200
 
     except Exception as e:
-        print("Exception in /api/chat:", str(e))
+        log("Exception in /api/chat: %s", str(e))
         return jsonify({"error": str(e)}), 500
 
 
@@ -94,15 +103,19 @@ def cleanup_sessions(timeout_minutes=30):
 def before_request():
     cleanup_sessions()
 
+
 @app.before_request
 def log_sessions():
-    if request.path.startswith('/api'):
-        print(f"[Before request] API call to {request.path} — Current sessions: {list(llm_sessions.keys())}")
-
+    if request.path.startswith("/api"):
+        log.info(
+            "[Before request] API call to %s — Current sessions: %s",
+            request.path,
+            list(llm_sessions.keys()),
+        )
 
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3000))
-    print("Starting flask server...")
+    log.info("Starting flask server...")
     app.run(host="0.0.0.0", port=port, debug=True)
-    print(f"Server running at http://localhost:{port}")
+    log.info(f"Server running at http://localhost:{port}")
