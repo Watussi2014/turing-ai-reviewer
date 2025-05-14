@@ -4,18 +4,20 @@ from langchain_core.prompts import PromptTemplate
 import streamlit as st
 import json
 from langchain.schema import SystemMessage, HumanMessage
-import os
+import tiktoken
 
-
+def count_tokens(text: str, model: str = "gpt-4"):
+    encoding = tiktoken.encoding_for_model(model)
+    return len(encoding.encode(text))
 
 class ModelService:
     def __init__(self):
         self.llm = self._init_model()
 
     def _init_model(self, model: str = constants.DEFAULT_MODEL) -> ChatOpenAI:
-        return ChatOpenAI(model=model, temperature=0.0)
+        return ChatOpenAI(model=model, temperature=0)
 
-    def extract_project_description(self, text_before_requirements):
+    def extract_project_description(self, task_description) -> str:
         template = """
         You are a helpful assistant that analyzes task descriptions and extracts the project description from them.
         The task description may contain details about the student, the course, or additional context. 
@@ -31,10 +33,10 @@ class ModelService:
             template=template,
         )
         chain = prompt_tepmlate | self.llm
-        project_description = chain.invoke({"task_description": text_before_requirements}).content
+        project_description = chain.invoke({"task_description": task_description}).content
         return project_description
 
-    def restructure_requirements(self, requirements):
+    def restructure_requirements(self, requirements: str) -> str:
         template = """
             You are a helpful assistant that analyzes project requirements and breaks them into 
             clear implementation steps for a student developer.
@@ -65,30 +67,42 @@ class ModelService:
             template=template)
 
         chain = restructuring_prompt | self.llm
-        restructured = chain.invoke({"requirements": requirements})
+        restructured = chain.invoke({"requirements": requirements}).content
         return restructured
 
-    def summarize_file(self, file_path, file_content, project_description):
+    def summarize_file(self, file_path: str, file_content: str, project_description: str) -> str:
+        """
+        Generates a concise summary of a file's purpose and role within a project using an LLM.
+
+        Args:
+            file_path (str): Path/filename of the file being summarized (used for context).
+            file_content (str): Content of the file to analyze.
+            project_description (str): Brief description of the overall project for context.
+
+        Returns:
+            Optional[str]: 2-4 sentence plain text summary of the file's role.
+        """
         template = """
-        You are reviewing a file from a student software project. 
-        Your task is to summarize what this file contains and explain its role in the project.
-
-        You are given:
-        - A brief description of the overall project
-        - The content of one project file (which may be code, a README, documentation, or configuration)
-
-        Based on the content and filename, write a clear and concise (2–4 sentence) 
-        summary describing what the file does or contains, and how it might contribute to the project.
-
-        Project Description:
-        {project_description}
-
-        Filename: {file_path}
-
-        File Content:
-        {file_content}
-
-        Your output should be a plain, helpful summary suitable for another developer trying to understand the project structure.
+            You are reviewing a file from a student software project. 
+            Your task is to summarize what this file contains and explain its role in the project.
+    
+            You are given:
+            - A brief description of the overall project
+            - The content of one project file (which may be code, a README, documentation, or configuration)
+    
+            Based on the content and filename, write a clear and concise (2–4 sentence) 
+            summary describing what the file does or contains, and how it might contribute to the project.
+    
+            Project Description:
+            {project_description}
+    
+            Filename: {file_path}
+    
+            File Content:
+            {file_content}
+    
+            Your output should be a plain, helpful summary suitable for another developer trying to 
+            understand the project structure.
         """
         summary_prompt = PromptTemplate(
             input_variables=["project_description", "file_path", "file_content"],
@@ -98,6 +112,19 @@ class ModelService:
         file_summary = chain.invoke({"file_content": file_content,
                                      "project_description": project_description,
                                      "file_path": file_path}).content
+        # Count tokens in the prompt
+        prompt_length = count_tokens(summary_prompt.format(
+            project_description=project_description,
+            file_path=file_path,
+            file_content=file_content
+        ))
+        st.write("File Summary Prompt Length: ")
+        st.write(summary_prompt.format(
+            project_description=project_description,
+            file_path=file_path,
+            file_content=file_content
+        ))
+        st.write(prompt_length)
         return file_summary
 
     def analyze_file_quality(self, file_path, file_summary, file_content):
@@ -140,6 +167,14 @@ class ModelService:
 
         message = PromptTemplate(template=prompt,
                                  input_variables=["file_path", "file_summary", "file_content"])
+        # Count tokens in the prompt
+        prompt_length = count_tokens(message.format(
+            file_path=file_path,
+            file_summary=file_summary,
+            file_content=file_content
+        ))
+        st.write("File Analysis Prompt Length: ")
+        st.write(prompt_length)
         chain = message | self.llm
         file_feedback = chain.invoke({"file_path": file_path,
                                       "file_summary": file_summary,
@@ -246,6 +281,15 @@ class ModelService:
         message = PromptTemplate(template=prompt,
                                  input_variables=["file_feedbacks", "requirements", "project_description"])
 
+        # Count tokens in the prompt
+        prompt_length = count_tokens(message.format(
+            file_feedbacks=file_feedbacks,
+            requirements=requirements,
+            project_description=project_description
+        ))
+        st.write("Final Feedback Prompt Length: ")
+        st.write(prompt_length)
+
         chain = message | self.llm
         final_feedback = chain.invoke({"file_feedbacks": file_feedbacks,
                                        "requirements": requirements,
@@ -285,15 +329,34 @@ class ModelService:
         """
         file_summary = [{"summary": file["summary"], "path": file["path"]} for file in file_data]
 
-        template = """You are a computer that precisely matches file paths and descriptions to a query.
-        You will receive a dictionary containing file paths and their descriptions. 
-        Based on the query that you receive, output 1-2 most fitting filenames. 
-        Your output must be strictly the paths separated by a space.
+        template = """
+            You are an expert project reviewer analyzing questions about a codebase. 
+            Your task is to identify if specific files are needed to answer a student's technical question.
     
-        ---FILE DICTIONARY---
-        {file_summary}
-        ---Query---
-        {query}"""
+            ### Instructions:
+            1. **Analyze the question** and the available file summaries below
+            2. **Decision**:
+               - If the question can be answered using just the general project knowledge: return "" (empty string)
+               - If specific files are needed to answer properly: return 1-2 most relevant file paths
+            3. **Output Format**:
+               - Only return space-separated file paths (e.g., "src/utils.py tests/test_main.py")
+               - Never include explanations, justifications, or punctuation
+               - Maximum 2 files (choose the most critical ones)
+    
+            ### Evaluation Criteria for File Relevance:
+            - The file must contain SPECIFIC implementation details needed to answer
+            - Prefer:
+              - Core implementation files over tests
+              - Main files over utility files
+              - Files explicitly mentioned in the question
+    
+            ### Available Files:
+            {file_summary}
+    
+            ### Student Question:
+            {query}
+    
+            Your response (only space-separated paths or empty string):"""
 
         prompt = PromptTemplate(
             input_variables=["file_summary", "query"],
@@ -301,8 +364,8 @@ class ModelService:
         )
         chain = prompt | self.llm
         selected_files = chain.invoke({"file_summary": file_summary, "query": query}).content
-        st.write("Selected files:")
-        st.write(selected_files)
+        print("Selected files:")
+        print(selected_files)
         return selected_files.split(" ")
 
     def generate_response(self, relevant_files, previous_conversation):
@@ -324,8 +387,16 @@ class ModelService:
             Here are the relevant project files:
             {relevant_file_data}
             """)
+        system_message_token_length = count_tokens(system_message.content)
+        previous_conversation_token_length = sum(
+            count_tokens(msg.content) for msg in previous_conversation
+        )
+        print("System Message Length: ")
+        print(system_message_token_length)
+        print("Previous Conversation Length: ")
+        print(previous_conversation_token_length)
+
         messages = [system_message] + previous_conversation
-        st.write(messages)
         response = self.llm(messages)
 
         return response.content
