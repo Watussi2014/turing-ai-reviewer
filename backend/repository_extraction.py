@@ -8,6 +8,10 @@ from typing import Optional, Tuple
 from model_service import ModelService
 import tempfile
 import shutil
+import dotenv
+from urllib.parse import urlparse
+
+dotenv.load_dotenv()
 
 def clean_zip_file(repo: str) -> dict:
     """
@@ -53,18 +57,63 @@ def download_repo(repo_url: str, branch: str = "main") -> Optional[io.BytesIO]:
     Raises:
         requests.exceptions.RequestException: If the request fails (e.g., connection error).
     """
+    token = os.getenv("GITHUB_TOKEN", None)
+    owner, repo_name = parse_github_url(repo_url)
+
+    headers = {"Accept": "application/vnd.github+json", 
+               "X-GitHub-Api-Version": "2022-11-28"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
     try:
         # Construct the correct URL for the ZIP file
-        url = f"{repo_url}/archive/refs/heads/{branch}.zip"
+        url = f"https://api.github.com/repos/{owner}/{repo_name}/zipball/{branch}"
 
         # Send a GET request to download the ZIP file
-        response = requests.get(url)
+        response = requests.get(url, headers=headers)
         response.raise_for_status()
         return io.BytesIO(response.content)
     except requests.exceptions.RequestException as e:
-        print(f"Failed to download repository: {e}")
-        return None
+        raise e
 
+def parse_github_url(repo_url: str) -> Tuple[str, str]:
+    """
+    Parse a GitHub repository URL to extract owner and repository name.
+    
+    Args:
+        repo_url (str): GitHub repository URL (e.g., "https://github.com/owner/repo")
+        
+    Returns:
+        Tuple[str, str]: A tuple containing (owner, repo_name)
+        
+    Raises:
+        ValueError: If the URL is not a valid GitHub repository URL
+    """
+    # Handle URLs with or without https://
+    if not repo_url.startswith(('http://', 'https://')):
+        repo_url = 'https://' + repo_url
+    
+    # Parse the URL
+    parsed_url = urlparse(repo_url)
+    
+    # Ensure it's a GitHub URL
+    if 'github.com' not in parsed_url.netloc:
+        raise ValueError(f"Not a GitHub URL: {repo_url}")
+    
+    # Extract path parts
+    path_parts = [p for p in parsed_url.path.split('/') if p]
+    
+    # Path should have at least owner/repo
+    if len(path_parts) < 2:
+        raise ValueError(f"Invalid GitHub repository URL: {repo_url}")
+    
+    owner = path_parts[0]
+    repo_name = path_parts[1]
+    
+    # Remove .git suffix if present
+    if repo_name.endswith('.git'):
+        repo_name = repo_name[:-4]
+    
+    return owner, repo_name
 def extract_zip(zip_file: io.BytesIO) -> Optional[str]:
     """
     Extracts a ZIP file into a temporary directory and returns the path to the extracted contents.
