@@ -1,14 +1,14 @@
 # turing-ai-reviewer
 
-# TODO
+## TODO
 
-## Arnold
+### Arnold
 
-* Improve ui
-* Deploy the project on the cloud
+* Improve ui -> Mostly done, could be improved a bit further
+* Deploy the project on the cloud -> Done
 * Demand acces to Turing repo for easier project access.
 
 
-## Andrii
+### Andrii
 
 * Improve model
