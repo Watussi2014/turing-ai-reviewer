@@ -27,7 +27,7 @@ def analyze_repo():
     global llm_cache
     data = request.json
     repo_url = data.get("repoUrl")
-    session_id = request.json.get("sessionId") or str(uuid4())
+    session_id = request.json.get("sessionId", str(uuid4()))
     ask_llm = ProjectReviewer(repo_url)
     ask_llm.extract_files()
 
@@ -52,11 +52,8 @@ def analyze_repo():
 @app.route("/api/chat", methods=["POST"])
 def chat():
     """Endpoint to handle chat messages about a repository."""
-    session_id = request.json.get("sessionId")
-    if not session_id or session_id not in llm_sessions:
-        return jsonify({"error": "Repository must be analyzed first"}), 400
-
     data = request.json
+    session_id = data.get("sessionId")
     user_message = data.get("message")
     ask_llm = llm_sessions[session_id]["llm"]
     llm_sessions[session_id]["last_accessed"] = datetime.now()
@@ -69,7 +66,7 @@ def chat():
         return jsonify({"response": reply}), 200
 
     except Exception as e:
-        log("Exception in /api/chat: %s", str(e))
+        log.error("Exception in /api/chat: %s", str(e))
         return jsonify({"error": str(e)}), 500
 
 

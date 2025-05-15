@@ -18,7 +18,7 @@ const AiReviewPage = () => {
   const messagesEndRef = useRef(null);
   const hasAutoRun = useRef(false); // <- to prevent repeated analysis
   const { toast } = useToast();
-
+  const [sessionId, setSessionId] = useState(null);
 
   useEffect(() => {
     const savedRepoUrl = localStorage.getItem('repoUrl');
@@ -71,7 +71,7 @@ const AiReviewPage = () => {
       .then(data => {
         setIsAnalyzing(false);
         setIsAnalyzed(true);
-
+        setSessionId(data.sessionId);
         // Show the session ID and initial LLM message
       setMessages([
                   { sender: 'bot', text: `Session ID: ${data.sessionId}` },
@@ -114,7 +114,8 @@ const AiReviewPage = () => {
       },
       body: JSON.stringify({ 
         repoUrl,
-        message: userQuestion
+        message: userQuestion,
+        sessionId
       }),
     })
       .then(response => {
@@ -132,7 +133,7 @@ const AiReviewPage = () => {
         setMessages(prev => [...prev, { 
           sender: 'bot', 
           text: "Sorry, I encountered an error while processing your question. Please try again." 
-        }]);
+        },{sender: 'bot', text: data.error}]);
         
         toast({
           title: "Error",
