@@ -15,8 +15,8 @@ COPY . .
 RUN cd frontend && npm install && npm run build
 
 # Create static directory and copy build output
-RUN mkdir -p /app/api/static && \
-    cp -r frontend/build/* /app/api/static/ || cp -r frontend/dist/* /app/api/static/
+RUN mkdir -p /app/backend/static && \
+    cp -r frontend/build/* /app/backend/static/ || cp -r frontend/dist/* /app/backend/static/
 
 
 # Create and activate virtual environment
