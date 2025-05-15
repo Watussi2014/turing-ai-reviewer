@@ -24,12 +24,12 @@ RUN python3.11 -m venv /app/venv
 ENV PATH="/app/venv/bin:$PATH"
 
 # Install Python dependencies
-COPY api/requirements.txt /app/api/requirements.txt
-RUN pip install --upgrade pip && pip install -r /app/api/requirements.txt
+COPY backend/requirements.txt /app/backend/requirements.txt
+RUN pip install --upgrade pip && pip install -r /app/backend/requirements.txt
 
 
 # Set the working directory to the backend
-WORKDIR /app/api
+WORKDIR /app/backend
 
 # Run the application
 CMD ["gunicorn", "--bind", "0.0.0.0:3000","--timeout", "180", "entrypoint:app"]
