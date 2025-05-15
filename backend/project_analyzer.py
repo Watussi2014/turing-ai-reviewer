@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import nbformat
 from typing import List, Dict, Tuple, Union
-VALID_EXTENSIONS = {'.py', '.ipynb', '.md', '.txt'}
+VALID_EXTENSIONS = {'.py', '.ipynb', '.md', '.txt', '.sql'}
 
 def analyze_project(project_folder: Union[str, Path], requirements: str,
                     description: str) -> Tuple[str, List[Dict[str, str]]]:
