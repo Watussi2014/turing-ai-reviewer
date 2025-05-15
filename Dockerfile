@@ -32,4 +32,4 @@ RUN pip install --upgrade pip && pip install -r /app/backend/requirements.txt
 WORKDIR /app/backend
 
 # Run the application
-CMD ["gunicorn", "--bind", "0.0.0.0:3000","--timeout", "180", "entrypoint:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:3000","--timeout", "600", "entrypoint:app"]
