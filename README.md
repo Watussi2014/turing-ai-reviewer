@@ -1,6 +1,6 @@
 # AI project reviewer for Turing College 
 
-This tool uses a Large Language Model (LLM) to automatically review Data Science, Machine Learning, Data Analysis, and general programming projects. It analyzes the repository and provides feedback based on the project requirements and other important aspects
+This tool uses Large Language Models (LLMs) to automatically review Data Science, Machine Learning, Data Analysis, and general programming projects. It analyzes the repository and provides feedback based on the project requirements and other important aspects
 
 ## How to use 
 1. You can simply visit this [link](https://turing-ai-reviewer.onrender.com)
@@ -12,8 +12,8 @@ the repository URL. The URL should be in the following format:
    - It must contain a task description file from Turing College:
       * The file should have a name consisting only of numbers (e.g., 115.ipynb or 225.md).
       * It should include the project description and requirements.
-   - The project consists of files with the following extensions: 
-     `.py`, `.ipynb`, `.md`, `.txt`, `.sql`
+   - The project's main content is located in the files with the following extensions: 
+     `.py`, `.ipynb`, `.md`, `.txt`, `.sql`(Other file types can be in the project, but they will be ignored).
 4. Click the "Start AI Review" button.
 5. Then, click "Analyze" to run the review process.
 6. You can ask follow-up questions to the AI based on the review.
@@ -56,7 +56,7 @@ is needed to answer the question.
 * **Plot Analysis via Vision-Language Models (VLMs)**
   * Use multimodal models to interpret and critique plots (e.g., line graphs, bar charts) generated in the project.
 * **Expanded File Type Support**
-  * Add compatibility for more file formats (e.g., .py, .csv, .txt, .r, etc.) to broaden analysis coverage.
+  * Add compatibility to analyze more file formats (e.g., .py, .csv, .txt, .r, etc.) 
 * **Voice Interaction Support**
   * Introduce voice-based input and responses in addition to the current chat-based interface.
 * **Improved RAG** 
