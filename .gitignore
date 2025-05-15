@@ -186,5 +186,5 @@ frontend/node_modules/
 reviewer_venv/
 .idea/
 .vite/
-api/tasks
-api/chat_ui.py
+backend/tasks
+backend/chat_ui.py
