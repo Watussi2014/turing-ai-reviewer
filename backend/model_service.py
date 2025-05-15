@@ -103,20 +103,36 @@ class ModelService:
             "file_content": file_content
         })
 
-    def analyze_file_quality(self, file_path: str, file_summary: str, file_content: str) -> str:
+    def analyze_file_quality(self, file_path: str, file_summary: str,
+                             file_content: str, structured_requirements: str) -> str:
         prompt = """
                 You are reviewing a file from a student project. You are given:
                 - A short summary describing the purpose of the file
                 - The full file content
                 - The file's path (to infer its role based on its name)
+                - A list of project requirements
 
-               Your goal is to:
-                1. Judge how well the file fulfills its intended role in the project
-                2. Highlight strengths and issues
+               Your tasks are as follows:
+                1. **Assess File Purpose**: 
+                   - Clearly state the file's role based on its name and summary.
+                   - Judge if it fulfills this purpose effectively (✅ True / ❌ False).
+                2. **Requirement Fulfillment**:
+                   - **Only list requirements that are fully (✅) or partially (⚠️) satisfied** by this file.
+                   - Ignore requirements that are irrelevant or not addressed.
+                3. **Strengths**:
+                   - Highlight well-implemented aspects.
+                   - For each, specify the **code location** (e.g., `function_x()`, `Section Y`).
+                4. **Improvements Needed**:
+                   - Prioritize critical issues.
+                   - Include **why** it matters and **how to fix**.
+                   - For minor issues (e.g., typos, formatting), group them concisely.
 
                 Be context-aware: treat README, requirements.txt, or config files differently from code modules.
 
                 ---
+                
+                **Project Requirements**:
+                {structured_requirements}
 
                 Now analyze the following file.
 
@@ -127,24 +143,13 @@ class ModelService:
 
                 **File Content**:
                 {file_content}
-
-
-                Your output should include:
-                1. **File purpose**: "What is this file for? Based on filename + summary."
-                2. **Fulfills the purpose**: true/false
-                3. **General Strengths**: 
-                    - List the file’s notable strengths.
-                    - For each, include an explanation and specify where (which file or part of the project) it is implemented.
-                5. **Areas for Improvement**: 
-                    - Focus first on the most critical issues, followed by less significant ones.
-                    - For each issue, explain why it matters and point to the specific implementation location (e.g. 
-                    function or code snippet).
                 """
         prompt = PromptTemplate(
-            input_variables=["file_path", "file_summary", "file_content"],
+            input_variables=["structured_requirements", "file_path", "file_summary", "file_content"],
             template=prompt
         )
         return self._invoke_llm(prompt, {
+            "structured_requirements": structured_requirements,
             "file_path": file_path,
             "file_summary": file_summary,
             "file_content": file_content
@@ -152,46 +157,60 @@ class ModelService:
 
     def generate_final_feedback(self, file_feedbacks: str, requirements: str, project_description: str) -> str:
         template = """
-               Your task is to produce a comprehensive project review for a student's project submission.
-               You are given:
-               - A short description of the overall project
-               - A list of project requirements
-               - Structured feedback for each file in the project
-               ---
-               **Project Description**:
-               {project_description}
+        You are a lead project reviewer. You have just analyzed each file of the project and provided feedback on them.
 
-               **Project Requirements**:
-               {requirements}
+        Your task now is to produce a comprehensive project review for a student's project submission.
 
-               **Feedback on Each File**:
-               {file_feedbacks}
+        You are given:
+        - A short description of the overall project
+        - A list of project requirements
+        - Structured feedback for each file in the project the you generated
 
-               ---
+        ---
 
-               Based on this, write a structured project review in Markdown format.
+        **Project Description**:
+        {project_description}
 
-               Your output should include:
-               1. **Overall Summary**: Brief overview of project quality, clarity, and correctness.
-               2. **Requirement Fulfillment**: For each requirement, explain if and how it's fulfilled, 
-               and which files contribute to it.
-               3. **General Strengths**: 
-                   - List the project’s notable strengths.
-                   - For each, include an explanation and specify where (which file or part of the project) it is implemented.
-               5. **Areas for Improvement**: 
-                   - Focus first on the most critical issues, followed by less significant ones.
-                   - For each issue, explain why it matters and point to the specific implementation location (e.g., filename, 
-                   function or code snippet).
-               6. **Suggested Next Steps**: Actionable advice for improving the project.
-               7. **Estimated Likelihood of Passing**: Based on the overall quality, requirement fulfillment, 
-               and file feedback, estimate the project's likelihood of passing a review by a Senior Developer. 
-               Assume that a score of 70/100 is the passing threshold. Provide a brief justification for the estimate,
-                highlighting strengths and weaknesses that influence the evaluation. Clearly state the estimated likelihood as
-                 an approximate chance of passing (not a numeric score), and briefly justify the estimate by summarizing key 
-                 strengths and weaknesses.
+        **Project Requirements**:
+        {requirements}
 
-               Use bullet points and subheadings to keep the review scannable. Use markdown table for requirement fulfillment.
-               """
+        **Feedback on Each File**:
+        {file_feedbacks}
+
+        ---
+
+        Write a structured, professional project review in Markdown format.
+
+        Base all evaluations on the provided file feedback. Reference specific filenames or sections where appropriate.
+
+        Your output should include:
+
+        1. **Overall Summary**  
+           - Briefly assess the project's overall quality, clarity, and correctness.
+
+        2. **Requirement Fulfillment**  
+           - For each requirement, explain whether and how it's fulfilled.
+           - Identify which file(s) contribute to fulfilling each.
+           - Present this as a Markdown table with columns like: `Requirement`, `Status`, `Notes`, `Files Involved`.
+
+        3. **General Strengths**  
+           - List notable strengths of the project.
+           - For each, explain why it stands out and where it appears (filename or section).
+
+        4. **Areas for Improvement**  
+           - Start with the most critical issues, then cover lesser concerns.
+           - Explain why each issue matters and where it occurs (filename, function, or snippet).
+
+        5. **Suggested Next Steps**  
+           - Provide actionable advice on how the student can improve the project.
+
+        6. **Estimated Likelihood of Passing**  
+           - Estimate how likely the project is to pass a review by a Senior Developer, assuming 70/100 is the passing threshold.
+           - Express this as an approximate chance (e.g., “likely”, “borderline”, “unlikely”).
+           - Justify your estimate by summarizing the main strengths and weaknesses.
+
+        Use bullet points and subheadings to keep the review scannable. Present requirement fulfillment in a Markdown table.
+        """
         prompt = PromptTemplate(
             input_variables=["file_feedbacks", "requirements", "project_description"],
             template=template

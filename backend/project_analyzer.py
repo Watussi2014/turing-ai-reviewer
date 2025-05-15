@@ -43,7 +43,7 @@ def analyze_project(project_folder: Union[str, Path], requirements: str,
         path = file["path"]
         content = file["code"]
         summary = file["summary"]
-        file_feedback = model_service.analyze_file_quality(path, summary, content)
+        file_feedback = model_service.analyze_file_quality(path, summary, content, structured_requirements)
         print(f"Feedback for {path}:")
         print(file_feedback)
         file_feedbacks[path] = file_feedback
