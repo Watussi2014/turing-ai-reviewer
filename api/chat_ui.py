@@ -1,8 +1,8 @@
 import streamlit as st
-from download_util import clean_zip_file
-from project_analysis import analyze_project
+from repository_extraction import clean_zip_file
+from project_analyzer import analyze_project
 from langchain_core.messages import HumanMessage, AIMessage
-from processing_chat import process_follow_up_message
+from project_analyzer import process_follow_up_message
 
 st.set_page_config(page_title="AI Project Reviewer", layout="wide")
 

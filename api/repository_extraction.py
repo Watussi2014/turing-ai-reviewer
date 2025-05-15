@@ -9,6 +9,36 @@ from model_service import ModelService
 import tempfile
 import shutil
 
+def clean_zip_file(repo: str) -> dict:
+    """
+    Processes a GitHub repository by downloading, extracting, and analyzing its contents to extract:
+    - Task requirements (from a structured `.ipynb` or `.md` file. Turing College task descriptions
+    are located in either .ipynb or .md file with the name consisting only of numbers).
+    - Project description (generated using Large Language Model).
+    - The path to the extracted project directory.
+
+    Args:
+        repo (str): The URL of the GitHub repository (e.g., "https://github.com/user/repo").
+
+    Returns:
+        dict: A dictionary containing the following keys:
+            - s"requirements" (str): Extracted task requirements (cleaned text).
+            - "description" (str): Generated project description (from a model service).
+            - "project_directory" (str): Path to the extracted project folder.
+    """
+    project_data = {}
+    model_service = ModelService()
+    zip_file = download_repo(repo)
+    project_folder = extract_zip(zip_file)
+    task_description = extract_task_description(project_folder)
+    requirements = extract_requirements(task_description)
+    description = extract_project_description(task_description, model_service)
+
+    project_data["requirements"] = requirements
+    project_data["description"] = description
+    project_data["project_directory"] = project_folder
+    return project_data
+
 def download_repo(repo_url: str, branch: str = "main") -> Optional[io.BytesIO]:
     """
     Download a GitHub repository as a ZIP file into memory.
@@ -65,37 +95,6 @@ def extract_zip(zip_file: io.BytesIO) -> Optional[str]:
         shutil.rmtree(temp_dir, ignore_errors=True)
         return None
 
-def find_task_description_file_content(directory: str) -> Optional[Tuple[str, str]]:
-    """
-    Searches an extracted directory for the first file whose name (excluding extension)
-    consists only of digits and has either a `.ipynb` or `.md` extension.
-    This file should be the task description in a Turing project.
-
-    Args:
-        directory (str): Path to the extracted directory.
-
-    Returns:
-        Optional[Tuple[str, str]]: A tuple containing the file content as a string
-        and its extension (either '.ipynb' or '.md'), or None if no matching file is found.
-    """
-    for root, _, files in os.walk(directory):
-        for file in files:
-            full_filename = os.path.basename(file)
-            filename, file_extension = os.path.splitext(full_filename)
-
-            if (file_extension in ('.ipynb', '.md')) and filename.isdigit():
-                file_path = os.path.join(root, file)
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    content = f.read()
-                    extension = file_extension
-                os.remove(file_path)
-                print(f"Deleted {file_path} after reading")
-                return content, extension
-
-    print("No valid task description file found in the directory.")
-    return None
-
-
 def extract_task_description(directory: str) -> str:
     """
     Extracts and returns the task description from an extracted project directory.
@@ -134,6 +133,36 @@ def extract_task_description(directory: str) -> str:
 
     return ""
 
+def find_task_description_file_content(directory: str) -> Optional[Tuple[str, str]]:
+    """
+    Searches an extracted directory for the first file whose name (excluding extension)
+    consists only of digits and has either a `.ipynb` or `.md` extension.
+    This file should be the task description in a Turing project.
+
+    Args:
+        directory (str): Path to the extracted directory.
+
+    Returns:
+        Optional[Tuple[str, str]]: A tuple containing the file content as a string
+        and its extension (either '.ipynb' or '.md'), or None if no matching file is found.
+    """
+    for root, _, files in os.walk(directory):
+        for file in files:
+            full_filename = os.path.basename(file)
+            filename, file_extension = os.path.splitext(full_filename)
+
+            if (file_extension in ('.ipynb', '.md')) and filename.isdigit():
+                file_path = os.path.join(root, file)
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    extension = file_extension
+                os.remove(file_path)
+                print(f"Deleted {file_path} after reading")
+                return content, extension
+
+    print("No valid task description file found in the directory.")
+    return None
+
 def extract_requirements(source_code: str) -> str:
     """
     Extract the content between '## Requirements' and the next '##' in the source code.
@@ -167,33 +196,3 @@ def extract_project_description(task_description: str, model_service: ModelServi
     print("Project description:")
     print(project_description)
     return project_description
-
-def clean_zip_file(repo: str) -> dict:
-    """
-    Processes a GitHub repository by downloading, extracting, and analyzing its contents to extract:
-    - Task requirements (from a structured `.ipynb` or `.md` file. Turing College task descriptions
-    are located in either .ipynb or .md file with the name consisting only of numbers).
-    - Project description (generated using Large Language Model).
-    - The path to the extracted project directory.
-
-    Args:
-        repo (str): The URL of the GitHub repository (e.g., "https://github.com/user/repo").
-
-    Returns:
-        dict: A dictionary containing the following keys:
-            - s"requirements" (str): Extracted task requirements (cleaned text).
-            - "description" (str): Generated project description (from a model service).
-            - "project_directory" (str): Path to the extracted project folder.
-    """
-    project_data = {}
-    model_service = ModelService()
-    zip_file = download_repo(repo)
-    project_folder = extract_zip(zip_file)
-    task_description = extract_task_description(project_folder)
-    requirements = extract_requirements(task_description)
-    description = extract_project_description(task_description, model_service)
-
-    project_data["requirements"] = requirements
-    project_data["description"] = description
-    project_data["project_directory"] = project_folder
-    return project_data

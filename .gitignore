@@ -186,4 +186,5 @@ frontend/node_modules/
 reviewer_venv/
 .idea/
 .vite/
+api/tasks
 .conda/

@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, send_from_directory, session
 from flask_cors import CORS
 import os
+from project_reviewer import ProjectReviewer
 from uuid import uuid4
 from datetime import datetime, timedelta
 from ask_llm import AskLLM
@@ -18,10 +19,11 @@ llm_sessions = {}
 @app.route("/api/analyze", methods=["POST"])
 def analyze_repo():
     """Endpoint to analyze a GitHub repository."""
+    global llm_cache
     data = request.json
     repo_url = data.get("repoUrl")
     session_id = request.json.get("sessionId") or str(uuid4())
-    ask_llm = AskLLM(repo_url)
+    ask_llm = ProjectReviewer(repo_url)
     ask_llm.extract_files()
 
     if not repo_url:
