@@ -1,10 +1,9 @@
-from flask import Flask, request, jsonify, send_from_directory, session
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
 from project_reviewer import ProjectReviewer
 from uuid import uuid4
 from datetime import datetime, timedelta
-from ask_llm import AskLLM
 import dotenv
 
 dotenv.load_dotenv()
