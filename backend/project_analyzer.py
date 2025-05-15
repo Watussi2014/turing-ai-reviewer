@@ -1,6 +1,5 @@
 from model_service import ModelService
 import json
-import streamlit as st
 import os
 from pathlib import Path
 import nbformat
@@ -34,7 +33,7 @@ def analyze_project(project_folder: Union[str, Path], requirements: str,
         structured_requirements = json.loads(structured_requirements)
         assert isinstance(structured_requirements, list)
     except (json.JSONDecodeError, AssertionError):
-        st.error("⚠️ The model returned invalid JSON. Please check the prompt or response.")
+        print("⚠️ The model returned invalid JSON. Please check the prompt or response.")
         structured_requirements = []
     print("Structured Requirements:")
     print(structured_requirements)
