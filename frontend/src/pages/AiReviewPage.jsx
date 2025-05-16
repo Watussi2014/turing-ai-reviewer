@@ -65,7 +65,7 @@ const AiReviewPage = () => {
       body: JSON.stringify({ repoUrl: urlToUse }),
     })
       .then(response => {
-        if (!response.ok) throw new Error('Network response was not ok');
+        if (!response.ok) throw new Error('Network response was not ok\n Make sure the repo is publicly available.');
         return response.json();
       })
       .then(data => {
