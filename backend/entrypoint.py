@@ -6,16 +6,17 @@ from uuid import uuid4
 from datetime import datetime, timedelta
 import dotenv
 import logging
+from requests.exceptions import HTTPError
 
 dotenv.load_dotenv()
 
 logging.basicConfig(
-    level=logging.INFO,  # Or DEBUG for more verbosity
-    format="%(asctime)s [%(levelname)s] %(message)s",)
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
 log = logging.getLogger(__name__)
 
 app = Flask(__name__, static_folder="static")
-# Simple CORS configuration allowing all origins
 CORS(app, supports_credentials=True, origins="*")
 
 llm_sessions = {}
@@ -24,13 +25,20 @@ llm_sessions = {}
 @app.route("/api/analyze", methods=["POST"])
 def analyze_repo():
     """Endpoint to analyze a GitHub repository."""
+
     global llm_cache
     data = request.json
-    try :
+
+    try:
         repo_url = data.get("repoUrl")
-    except Exception as e:
+    except HTTPError as e:
         log.error("Exception in /api/analyze: %s", str(e))
-        return jsonify({"message": "Error processing the repository. Please make sure the repo is publicly available."}), 500
+        return jsonify(
+            {
+                "message": "Error processing the repository. Please make sure the repo is publicly available."
+            }
+        ), 500
+
     session_id = request.json.get("sessionId", str(uuid4()))
     ask_llm = ProjectReviewer(repo_url)
     ask_llm.extract_files()

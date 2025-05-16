@@ -46,7 +46,7 @@ const AiReviewPage = () => {
 
   const handleAnalyzeRepo = (customUrl) => {
     const urlToUse = customUrl || repoUrl;
-  
+
     if (!validateGithubUrl(urlToUse)) {
       toast({
         title: "Invalid GitHub URL",
@@ -55,10 +55,10 @@ const AiReviewPage = () => {
       });
       return;
     }
-  
+
     setRepoUrl(urlToUse);
     setIsAnalyzing(true);
-  
+
     fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -73,12 +73,12 @@ const AiReviewPage = () => {
         setIsAnalyzed(true);
         setSessionId(data.sessionId);
         // Show the session ID and initial LLM message
-      setMessages([
-                  { sender: 'bot', text: `Session ID: ${data.sessionId}` },
-                  { sender: 'bot', text: data.response }
-                ]);
+        setMessages([
+          { sender: 'bot', text: `Session ID: ${data.sessionId}` },
+          { sender: 'bot', text: data.response }
+        ]);
 
-  
+
         toast({
           title: "Repository Analyzed",
           description: "The project has been successfully analyzed. You can now ask questions about it.",
@@ -94,25 +94,25 @@ const AiReviewPage = () => {
         });
       });
   };
-  
+
   const handleSendMessage = () => {
     if (!inputMessage.trim()) return;
-    
+
     // Add user message
     setMessages(prev => [...prev, { sender: 'user', text: inputMessage }]);
     const userQuestion = inputMessage;
     setInputMessage('');
-    
+
     // Simulate bot typing
     setIsTyping(true);
-    
+
     // Call backend API to get a response
     fetch('/api/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         repoUrl,
         message: userQuestion,
         sessionId
@@ -130,11 +130,11 @@ const AiReviewPage = () => {
       })
       .catch(error => {
         setIsTyping(false);
-        setMessages(prev => [...prev, { 
-          sender: 'bot', 
-          text: "Sorry, I encountered an error while processing your question. Please try again." 
-        },{sender: 'bot', text: data.error}]);
-        
+        setMessages(prev => [...prev, {
+          sender: 'bot',
+          text: "Sorry, I encountered an error while processing your question. Please try again."
+        }, { sender: 'bot', text: data.error }]);
+
         toast({
           title: "Error",
           description: error.message || "Failed to get a response. Please try again.",
@@ -178,7 +178,7 @@ const AiReviewPage = () => {
                   )}
                 </Button>
               </div>
-  
+
               {isAnalyzing && (
                 <div className="mt-6">
                   <div className="w-full h-2 bg-[#2a2a2d] rounded-full overflow-hidden">
@@ -201,7 +201,7 @@ const AiReviewPage = () => {
                 </h2>
               </div>
             </div>
-  
+
             {/* Fullscreen Chat Card */}
             <div className="bg-[#1a1b1e] rounded-xl border border-[#2c2d30] shadow-md px-6 py-8 min-h-[calc(100vh-140px)] flex flex-col justify-between">
               <div className="overflow-y-auto space-y-4 mb-4 max-h-[70vh] pr-2">
@@ -211,11 +211,10 @@ const AiReviewPage = () => {
                     className={`mb-2 ${msg.sender === 'user' ? 'text-right' : 'text-left'}`}
                   >
                     <div
-                      className={`inline-block max-w-3xl whitespace-pre-wrap px-4 py-3 rounded-lg text-sm ${
-                        msg.sender === 'user'
+                      className={`inline-block max-w-3xl whitespace-pre-wrap px-4 py-3 rounded-lg text-sm ${msg.sender === 'user'
                           ? 'bg-[#7c3aed] text-white'
                           : 'bg-[#2c2d30] text-gray-200'
-                      }`}
+                        }`}
                     >
                       <MarkdownMessage content={msg.text} />
                     </div>
@@ -223,7 +222,7 @@ const AiReviewPage = () => {
                 ))}
                 {isTyping && <div className="text-sm text-gray-400">AI is typing...</div>}
               </div>
-  
+
               {/* Chat input */}
               <div className="pt-4 border-t border-[#2c2d30]">
                 <div className="flex gap-2">
@@ -252,6 +251,6 @@ const AiReviewPage = () => {
       </div>
     </>
   );
-  
-};  
+
+};
 export default AiReviewPage;
