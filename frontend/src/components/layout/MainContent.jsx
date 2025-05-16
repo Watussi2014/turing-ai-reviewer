@@ -128,8 +128,17 @@ const MainContent = () => {
 
         </div>
 
-        <div className="mt-12 text-gray-300">
-          <p className="mb-4">Welcome to our first version of the AI Reviewer.</p>
+        <div className="mt-12 text-gray-400">
+          <p className="mb-1">Welcome to our first version of the AI Reviewer. This is a proof of concept of what an automated AI reviewer could look like for Turing College.</p>
+          <p className="text-gray-400 mb-2">
+            For more informations, you can visit the{' '}
+            <a 
+              href="https://github.com/Watussi2014/turing-ai-reviewer" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:text-blue-400 underline">
+              GitHub repo</a>{' '}of the project.
+          </p>
           <h3 className="text-lg font-semibold text-white mb-2">How it works</h3>
           <ol className="list-decimal list-inside space-y-1 text-gray-400">
             <li>It downloads all of the files from a GitHub repo.</li>
@@ -138,11 +147,11 @@ const MainContent = () => {
             <li>It then generates a first review of the project.</li>
             <li>You can chat with the model to get further help.</li>
           </ol>
-          <h3 className="text-lg font-semibold text-white mb-2 mt-4">Next steps</h3>
+          <h3 className="text-lg font-semibold text-white mb-2 mt-4">Current issues</h3>
           <ul className="list-disc list-inside space-y-1 text-gray-400">
-            <li>Use a more advanced model for the reviews.</li>
-            <li>Have a database of other learners' projects for the same sprint to help it review.</li>
-            <li>Have a database of the previous sprints' projects to check how the learner improves.</li>
+            <li>Right now the analysis is very slow, it can take 3+ minutes if the repo contains a lot of files. Rewriting some functions to be asynchronous would help with that.</li>
+            <li>The LLM hallucinates some requirements. We need to find a good balance between how strict we want the LLM to follow the requirements and the suggestions it makes.</li>
+            <li>Only public repos are supported. We can add support for private repos if we get an access token to Turing College github.</li>
           </ul>
         </div>
 
