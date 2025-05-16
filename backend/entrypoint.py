@@ -26,7 +26,11 @@ def analyze_repo():
     """Endpoint to analyze a GitHub repository."""
     global llm_cache
     data = request.json
-    repo_url = data.get("repoUrl")
+    try :
+        repo_url = data.get("repoUrl")
+    except Exception as e:
+        log.error("Exception in /api/analyze: %s", str(e))
+        return jsonify({"message": "Error processing the repository. Please make sure the repo is publicly available."}), 500
     session_id = request.json.get("sessionId", str(uuid4()))
     ask_llm = ProjectReviewer(repo_url)
     ask_llm.extract_files()
